@@ -38,7 +38,9 @@ class AdminPanelProvider extends PanelProvider
                 'danger'  => Color::Rose,
             ])
             ->font('Inter')
-            ->brandName('TraceLog')
+            ->brandName('AgroAlvarado')
+            ->brandLogo(asset('images/logo.png')) 
+            ->brandLogoHeight('3.5rem')
             ->darkMode(true)
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
