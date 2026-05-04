@@ -56,6 +56,10 @@ class Producto extends Model
     {
         return $this->hasMany(MovimientoInventario::class);
     }
+    public function inventarioPorAlmacen()
+    {
+        return $this->hasMany(InventarioAlmacen::class);
+    }
 
     // Scopes
     public function scopeActivo($query)

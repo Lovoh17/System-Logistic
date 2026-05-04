@@ -3,11 +3,11 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
-use App\Filament\Resources\{ClienteResource, EnvioResource, MovimientoInventarioResource};
+use App\Filament\Resources\{ClienteResource, TrasladoResource ,InventarioAlmacenResource, UserResource , EnvioResource, MovimientoInventarioResource};
 use App\Filament\Resources\{PedidoCompraResource, PedidoVentaResource, ProductoResource};
 use App\Filament\Resources\{ProveedorResource, TransportistaResource};
 use App\Filament\Widgets\{EnviosActivosWidget, EstadisticasWidget, GraficoVentasWidget};
-use App\Filament\Widgets\{PedidosPendientesWidget, StockCriticoWidget};
+use App\Filament\Widgets\{PedidosPendientesWidget, StockCriticoWidget, AlertasInventario};
 use Filament\Http\Middleware\{Authenticate, DisableBladeIconComponents, DispatchServingFilamentEvent};
 use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
@@ -57,9 +57,12 @@ class AdminPanelProvider extends PanelProvider
                 ProductoResource::class,
                 MovimientoInventarioResource::class,
                 PedidoCompraResource::class,
+                UserResource::class,
                 PedidoVentaResource::class,
                 TransportistaResource::class,
                 EnvioResource::class,
+                InventarioAlmacenResource::class,
+                TrasladoResource::class,
             ])
             ->widgets([
                 EstadisticasWidget::class,
@@ -67,6 +70,7 @@ class AdminPanelProvider extends PanelProvider
                 PedidosPendientesWidget::class,
                 StockCriticoWidget::class,
                 EnviosActivosWidget::class,
+                AlertasInventario::class,
             ])
             ->middleware([
                 EncryptCookies::class,

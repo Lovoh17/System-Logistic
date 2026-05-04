@@ -27,7 +27,18 @@ class PedidoCompraResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
+        return $form->schema(self::getFormSchema());
+    }
+
+    public static function getFormSchema(): array
+    {
+        $productoId = request()->query('producto_id');
+        $cantidadNecesaria = request()->query('cantidad_necesaria');
+        $proveedorId = request()->query('proveedor_id');
+
+        $producto = $productoId ? Producto::find($productoId) : null;
+
+        return [
             Forms\Components\Section::make('Encabezado de la Orden de Compra')
                 ->icon('heroicon-o-document-text')
                 ->columns(4)
@@ -42,6 +53,7 @@ class PedidoCompraResource extends Resource
                         ->label('Proveedor')
                         ->relationship('proveedor', 'nombre')
                         ->searchable()->preload()->required()
+                        ->default($proveedorId)
                         ->columnSpan(2),
 
                     Forms\Components\Select::make('estado')
@@ -62,7 +74,9 @@ class PedidoCompraResource extends Resource
 
                     Forms\Components\DatePicker::make('fecha_requerida')
                         ->label('Fecha de Entrega Requerida')
-                        ->minDate(now())->columnSpan(1),
+                        ->minDate(now())
+                        ->default(now()->addDays(7))
+                        ->columnSpan(1),
 
                     Forms\Components\DatePicker::make('fecha_recepcion')
                         ->label('Fecha Real de Recepción')
@@ -80,6 +94,14 @@ class PedidoCompraResource extends Resource
                         ->relationship()
                         ->label('')
                         ->columns(6)
+                        ->defaultItems($producto ? 1 : 0)
+                        ->default($producto ? [[
+                            'producto_id' => $producto->id,
+                            'cantidad' => $cantidadNecesaria ?? $producto->stock_minimo,
+                            'precio_unitario' => $producto->precio_compra,
+                            'unidad_medida' => $producto->unidad_medida,
+                            'subtotal' => ($cantidadNecesaria ?? $producto->stock_minimo) * $producto->precio_compra,
+                        ]] : [])
                         ->schema([
                             Forms\Components\Select::make('producto_id')
                                 ->label('Producto')
@@ -167,7 +189,7 @@ class PedidoCompraResource extends Resource
                         ->rows(2)->columnSpanFull()
                         ->visible(fn(Forms\Get $get) => $get('estado') === 'cancelado'),
                 ]),
-        ]);
+        ];
     }
 
     public static function table(Table $table): Table
@@ -278,7 +300,6 @@ class PedidoCompraResource extends Resource
                             'estado'          => 'recibido',
                             'fecha_recepcion' => $data['fecha_recepcion'],
                         ]);
-                        // Aquí se actualizaría el stock (via Observer o Service)
                         Notification::make()
                             ->title('Recepción registrada')
                             ->body('El inventario ha sido actualizado.')
