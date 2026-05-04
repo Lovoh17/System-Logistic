@@ -12,6 +12,13 @@ use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 
+//exports de excel
+use App\Exports\InventarioSucursalExport;
+use App\Exports\InventarioGeneralExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Filament\Tables\Actions\BulkAction;
+use Illuminate\Database\Eloquent\Collection;
+
 class InventarioAlmacenResource extends Resource
 {
     protected static ?string $model = InventarioAlmacen::class;
@@ -144,6 +151,22 @@ class InventarioAlmacenResource extends Resource
                             'proveedor_id' => $record->producto->proveedor_id ?? null
                         ])
                     ),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('exportar_general')
+                    ->label('Exportar Inventario General')
+                    ->icon('heroicon-m-document-arrow-down')
+                    ->color('success')
+                    ->action(function () {
+                        return Excel::download(new InventarioGeneralExport(), 'inventario_general_' . date('Y-m-d') . '.xlsx');
+                    }),
+                Tables\Actions\Action::make('exportar_por_sucursal')
+                    ->label('Exportar por Sucursal')
+                    ->icon('heroicon-m-document-arrow-down')
+                    ->color('info')
+                    ->action(function () {
+                        return Excel::download(new InventarioSucursalExport(), 'inventario_por_sucursal_' . date('Y-m-d') . '.xlsx');
+                    }),
             ]);
     }
 

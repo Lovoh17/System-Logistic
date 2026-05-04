@@ -13,6 +13,13 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
+//exports de excel
+use App\Exports\InventarioSucursalExport;
+use App\Exports\InventarioGeneralExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Filament\Tables\Actions\BulkAction;
+use Illuminate\Database\Eloquent\Collection;
+
 class ProductoResource extends Resource
 {
     protected static ?string $model = Producto::class;
@@ -274,6 +281,22 @@ class ProductoResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('exportar_general')
+                    ->label('Exportar Inventario General')
+                    ->icon('heroicon-m-document-arrow-down')
+                    ->color('success')
+                    ->action(function () {
+                        return Excel::download(new InventarioGeneralExport(), 'inventario_general_' . date('Y-m-d') . '.xlsx');
+                    }),
+                Tables\Actions\Action::make('exportar_por_sucursal')
+                    ->label('Exportar por Sucursal')
+                    ->icon('heroicon-m-document-arrow-down')
+                    ->color('info')
+                    ->action(function () {
+                        return Excel::download(new InventarioSucursalExport(), 'inventario_por_sucursal_' . date('Y-m-d') . '.xlsx');
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
