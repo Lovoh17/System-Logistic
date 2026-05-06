@@ -3,9 +3,9 @@
 namespace App\Providers;
 
 use App\Models\PedidoCompra;
+
 use App\Models\PedidoVenta;
 use App\Models\Traslado;
-
 use App\Observers\TrasladoObserver;
 use App\Observers\PedidoCompraObserver;
 use App\Observers\PedidoVentaObserver;
@@ -15,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->bind(LoginResponse::class, CustomLoginResponse::class);
     }
 
     public function boot(): void

@@ -109,7 +109,7 @@ class UserResource extends Resource
                     ])
                     ->icon(fn ($record) => $record->email_verified_at ? 'heroicon-m-check-badge' : 'heroicon-m-x-circle'),
                     
-                TextColumn::make('roles.name')
+                TextColumn::make('rol')
                     ->label('Roles')
                     ->badge()
                     ->color('info')

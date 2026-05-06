@@ -16,6 +16,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'rol', 
     ];
 
     protected $hidden = [
@@ -39,4 +40,29 @@ class User extends Authenticatable implements FilamentUser
     {
         return true;
     }
+
+    public static function getHomeUrl(): string
+{
+    $user = auth()->user();
+    
+    if (!$user) {
+        return '/login';
+    }
+    
+    if ($user->hasRole('super-admin') || $user->hasRole('admin-sucursal')) {
+        return '/admin';
+    }
+    
+    if ($user->hasRole('cajero')) {
+        return '/ventas';
+    }
+    
+    if ($user->hasRole('logistica') || $user->hasRole('supervisor-bodega')) {
+        return '/admin';
+    }
+    
+    return '/admin'; // Por defecto
+}
+
+    
 }
