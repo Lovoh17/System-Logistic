@@ -6,8 +6,10 @@ use App\Models\Producto;
 use App\Models\Cliente;
 use App\Models\PedidoVenta;
 use App\Models\PedidoVentaItem;
+use App\Models\InventarioAlmacen;
 use Filament\Widgets\Widget;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\DB;
+use Filament\Notifications\Notification;
 
 class PuntoVentaWidget extends Widget
 {
@@ -15,7 +17,7 @@ class PuntoVentaWidget extends Widget
     protected static ?int $sort = 1;
     protected int | string | array $columnSpan = 'full';
     
-    protected static string $view = 'filament.widgets.punto-venta-widget';
+    protected static string $view = 'filament.ventas.widgets.punto-venta-widget';
     
     public $carrito = [];
     public $cliente_id = null;
@@ -25,7 +27,7 @@ class PuntoVentaWidget extends Widget
     
     public function mount()
     {
-        $this->carrito = Session::get('carrito', []);
+        $this->carrito = session()->get('carrito_ventas', []);
     }
     
     public function agregarProducto()
@@ -37,7 +39,7 @@ class PuntoVentaWidget extends Widget
         }
         
         if ($this->cantidad > $producto->stock_actual) {
-            \Filament\Notifications\Notification::make()
+            Notification::make()
                 ->title('Stock insuficiente')
                 ->body("Solo hay {$producto->stock_actual} unidades disponibles")
                 ->danger()
@@ -48,10 +50,7 @@ class PuntoVentaWidget extends Widget
         if (isset($this->carrito[$producto->id])) {
             $nuevaCantidad = $this->carrito[$producto->id]['cantidad'] + $this->cantidad;
             if ($nuevaCantidad > $producto->stock_actual) {
-                \Filament\Notifications\Notification::make()
-                    ->title('Stock insuficiente')
-                    ->danger()
-                    ->send();
+                Notification::make()->title('Stock insuficiente')->danger()->send();
                 return;
             }
             $this->carrito[$producto->id]['cantidad'] = $nuevaCantidad;
@@ -68,11 +67,9 @@ class PuntoVentaWidget extends Widget
         $this->actualizarCarrito();
         $this->producto_id = null;
         $this->cantidad = 1;
+        $this->busqueda = '';
         
-        \Filament\Notifications\Notification::make()
-            ->title('Producto agregado')
-            ->success()
-            ->send();
+        Notification::make()->title('Producto agregado')->success()->send();
     }
     
     public function eliminarProducto($productoId)
@@ -85,10 +82,7 @@ class PuntoVentaWidget extends Widget
     {
         $producto = Producto::find($productoId);
         if ($cantidad > $producto->stock_actual) {
-            \Filament\Notifications\Notification::make()
-                ->title('Stock insuficiente')
-                ->danger()
-                ->send();
+            Notification::make()->title('Stock insuficiente')->danger()->send();
             return;
         }
         
@@ -104,7 +98,7 @@ class PuntoVentaWidget extends Widget
     
     public function actualizarCarrito()
     {
-        Session::put('carrito', $this->carrito);
+        session()->put('carrito_ventas', $this->carrito);
         $this->dispatch('carrito-actualizado');
     }
     
@@ -113,50 +107,54 @@ class PuntoVentaWidget extends Widget
         return collect($this->carrito)->sum('subtotal');
     }
     
-    public function getItemsCountProperty()
+    public function getTotalConIvaProperty()
     {
-        return collect($this->carrito)->sum('cantidad');
+        return $this->total * 1.13;
+    }
+    
+    public function getIvaProperty()
+    {
+        return $this->total * 0.13;
     }
     
     public function limpiarCarrito()
     {
         $this->carrito = [];
         $this->actualizarCarrito();
+        Notification::make()->title('Carrito limpiado')->info()->send();
     }
     
     public function procesarVenta()
     {
         if (empty($this->carrito)) {
-            \Filament\Notifications\Notification::make()
-                ->title('Carrito vacío')
-                ->warning()
-                ->send();
+            Notification::make()->title('Carrito vacío')->warning()->send();
             return;
         }
         
         if (!$this->cliente_id) {
-            \Filament\Notifications\Notification::make()
-                ->title('Seleccione un cliente')
-                ->warning()
-                ->send();
+            Notification::make()->title('Seleccione un cliente')->warning()->send();
             return;
         }
         
         try {
-            // Crear pedido de venta
+            DB::beginTransaction();
+            
+            $subtotal = $this->total;
+            $impuesto = $subtotal * 0.13;
+            $total = $subtotal + $impuesto;
+            
             $pedido = PedidoVenta::create([
                 'numero' => PedidoVenta::generarNumero(),
                 'cliente_id' => $this->cliente_id,
                 'user_id' => auth()->id(),
                 'fecha_pedido' => now(),
                 'estado' => 'confirmado',
-                'subtotal' => $this->total,
-                'impuesto' => $this->total * 0.13,
-                'total' => $this->total * 1.13,
+                'subtotal' => $subtotal,
+                'impuesto' => $impuesto,
+                'total' => $total,
                 'moneda' => 'USD',
             ]);
             
-            // Crear items del pedido
             foreach ($this->carrito as $item) {
                 PedidoVentaItem::create([
                     'pedido_venta_id' => $pedido->id,
@@ -166,48 +164,59 @@ class PuntoVentaWidget extends Widget
                     'subtotal' => $item['subtotal'],
                 ]);
                 
-                // Actualizar stock
                 $producto = Producto::find($item['id']);
                 $producto->stock_actual -= $item['cantidad'];
                 $producto->save();
             }
             
+            DB::commit();
+            
+            $this->mostrarTicket($pedido);
             $this->limpiarCarrito();
             $this->cliente_id = null;
             
-            \Filament\Notifications\Notification::make()
-                ->title('Venta procesada')
-                ->body("Pedido N°: {$pedido->numero} | Total: $" . number_format($pedido->total, 2))
-                ->success()
-                ->send();
-                
         } catch (\Exception $e) {
-            \Filament\Notifications\Notification::make()
-                ->title('Error al procesar venta')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
+            DB::rollBack();
+            Notification::make()->title('Error al procesar venta')->body($e->getMessage())->danger()->send();
         }
+    }
+    
+    public function mostrarTicket($pedido)
+    {
+        $pedido->load(['cliente', 'items.producto']);
+        
+        $html = view('filament.ventas.widgets.ticket-venta', compact('pedido'))->render();
+        
+        $this->dispatch('open-ticket-modal', html: $html);
     }
     
     public function getProductosBusquedaProperty()
     {
-        if (empty($this->busqueda)) {
-            return [];
+        if (empty($this->busqueda) || strlen($this->busqueda) < 2) {
+            return collect();
         }
         
         return Producto::where('estado', 'activo')
-            ->where('nombre', 'like', "%{$this->busqueda}%")
-            ->orWhere('codigo', 'like', "%{$this->busqueda}%")
-            ->orWhere('sku', 'like', "%{$this->busqueda}%")
+            ->where(function($q) {
+                $q->where('nombre', 'like', "%{$this->busqueda}%")
+                  ->orWhere('codigo', 'like', "%{$this->busqueda}%")
+                  ->orWhere('sku', 'like', "%{$this->busqueda}%");
+            })
             ->limit(10)
             ->get();
     }
     
-    public function seleccionarProducto($productoId)
+    public function getClientesProperty()
     {
-        $this->producto_id = $productoId;
-        $this->busqueda = '';
-        $this->agregarProducto();
+        return Cliente::where('estado', 'activo')->orderBy('nombre')->get();
+    }
+    
+    public function getProductosRapidosProperty()
+    {
+        return Producto::where('estado', 'activo')
+            ->where('stock_actual', '>', 0)
+            ->orderBy('stock_actual', 'desc')
+            ->limit(8)
+            ->get();
     }
 }

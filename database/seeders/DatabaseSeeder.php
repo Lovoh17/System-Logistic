@@ -12,243 +12,189 @@ use App\Models\Almacen;
 use App\Models\InventarioAlmacen;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
         // ═══════════════════════════════════════════════════════════════════
-        // 1. CATEGORÍAS (Ferretería, Agricultura, Construcción, etc.)
+        // 1. USUARIOS DEL SISTEMA
+        // ═══════════════════════════════════════════════════════════════════
+        
+        User::updateOrCreate(
+            ['email' => 'superadmin@tracelog.com'],
+            ['name' => 'Super Administrador', 'password' => Hash::make('password')]
+        );
+        
+        // Usuarios por sucursal
+        $sucursales = ['ss', 'sa', 'sm', 'll', 'so', 'us'];
+        $nombresSucursales = ['San Salvador', 'Santa Ana', 'San Miguel', 'La Libertad', 'Sonsonate', 'Usulután'];
+        
+        foreach ($sucursales as $index => $code) {
+            User::updateOrCreate(
+                ['email' => "admin.{$code}@tracelog.com"],
+                ['name' => "Administrador {$nombresSucursales[$index]}", 'password' => Hash::make('password')]
+            );
+            User::updateOrCreate(
+                ['email' => "cajero.{$code}@tracelog.com"],
+                ['name' => "Cajero {$nombresSucursales[$index]}", 'password' => Hash::make('password')]
+            );
+            User::updateOrCreate(
+                ['email' => "bodega.{$code}@tracelog.com"],
+                ['name' => "Supervisor Bodega {$nombresSucursales[$index]}", 'password' => Hash::make('password')]
+            );
+        }
+        
+        User::updateOrCreate(
+            ['email' => 'logistica@tracelog.com'],
+            ['name' => 'Coordinador Logístico', 'password' => Hash::make('password')]
+        );
+        
+        // ═══════════════════════════════════════════════════════════════════
+        // 2. CATEGORÍAS
         // ═══════════════════════════════════════════════════════════════════
         
         $categorias = [
-            ['nombre' => 'Herramientas Eléctricas', 'slug' => 'herramientas-electricas', 'icono' => 'heroicon-o-bolt', 'color' => '#f59e0b'],
-            ['nombre' => 'Herramientas Manuales', 'slug' => 'herramientas-manuales', 'icono' => 'heroicon-o-wrench', 'color' => '#6b7280'],
-            ['nombre' => 'Materiales de Construcción', 'slug' => 'materiales-construccion', 'icono' => 'heroicon-o-building', 'color' => '#ef4444'],
-            ['nombre' => 'Fertilizantes y Agroquímicos', 'slug' => 'fertilizantes', 'icono' => 'heroicon-o-sparkles', 'color' => '#10b981'],
-            ['nombre' => 'Pinturas y Acabados', 'slug' => 'pinturas', 'icono' => 'heroicon-o-paint-brush', 'color' => '#8b5cf6'],
-            ['nombre' => 'Ferretería en General', 'slug' => 'ferreteria-general', 'icono' => 'heroicon-o-cog', 'color' => '#3b82f6'],
-            ['nombre' => 'Jardinería y Riego', 'slug' => 'jardineria', 'icono' => 'heroicon-o-flower', 'color' => '#22c55e'],
-            ['nombre' => 'Seguridad Industrial', 'slug' => 'seguridad', 'icono' => 'heroicon-o-shield-check', 'color' => '#eab308'],
-            ['nombre' => 'Plomería', 'slug' => 'plomeria', 'icono' => 'heroicon-o-droplet', 'color' => '#06b6d4'],
-            ['nombre' => 'Electricidad', 'slug' => 'electricidad', 'icono' => 'heroicon-o-light-bulb', 'color' => '#f97316'],
+            ['nombre' => 'Herramientas Eléctricas', 'slug' => 'herramientas-electricas'],
+            ['nombre' => 'Herramientas Manuales', 'slug' => 'herramientas-manuales'],
+            ['nombre' => 'Materiales de Construcción', 'slug' => 'materiales-construccion'],
+            ['nombre' => 'Fertilizantes', 'slug' => 'fertilizantes'],
+            ['nombre' => 'Pinturas', 'slug' => 'pinturas'],
+            ['nombre' => 'Ferretería General', 'slug' => 'ferreteria-general'],
+            ['nombre' => 'Jardinería', 'slug' => 'jardineria'],
+            ['nombre' => 'Seguridad Industrial', 'slug' => 'seguridad'],
         ];
         
+        $categoriasCreadas = [];
         foreach ($categorias as $cat) {
-            Categoria::create($cat);
+            $categoriasCreadas[] = Categoria::create($cat);
         }
-
+        
         // ═══════════════════════════════════════════════════════════════════
-        // 2. PROVEEDORES
+        // 3. PROVEEDORES
         // ═══════════════════════════════════════════════════════════════════
         
-        $proveedores = [
-            ['codigo' => 'PROV-001', 'nombre' => 'Truper El Salvador', 'email' => 'ventas@truper.com.sv', 'telefono' => '2244-1111', 'categoria' => 'materia_prima', 'tiempo_entrega_dias' => 3, 'calificacion' => 4.8],
-            ['codigo' => 'PROV-002', 'nombre' => 'Pinturas Comex', 'email' => 'pedidos@comex.com', 'telefono' => '2222-2222', 'categoria' => 'materia_prima', 'tiempo_entrega_dias' => 4, 'calificacion' => 4.5],
-            ['codigo' => 'PROV-003', 'nombre' => 'Holcim El Salvador', 'email' => 'ventas@holcim.com.sv', 'telefono' => '2244-3333', 'categoria' => 'materia_prima', 'tiempo_entrega_dias' => 5, 'calificacion' => 4.9],
-            ['codigo' => 'PROV-004', 'nombre' => 'Bayer Crop Science', 'email' => 'agricultura@bayer.com', 'telefono' => '2244-4444', 'categoria' => 'materia_prima', 'tiempo_entrega_dias' => 6, 'calificacion' => 4.7],
-            ['codigo' => 'PROV-005', 'nombre' => 'Makita El Salvador', 'email' => 'ventas@makita.com.sv', 'telefono' => '2244-5555', 'categoria' => 'materia_prima', 'tiempo_entrega_dias' => 3, 'calificacion' => 4.9],
-            ['codigo' => 'PROV-006', 'nombre' => 'Distribuidora de Materiales Ponce', 'email' => 'ventas@ponce.com', 'telefono' => '2244-6666', 'categoria' => 'general', 'tiempo_entrega_dias' => 2, 'calificacion' => 4.3],
-            ['codigo' => 'PROV-007', 'nombre' => 'Agro Insumos S.A.', 'email' => 'ventas@agroinsumos.com', 'telefono' => '2244-7777', 'categoria' => 'materia_prima', 'tiempo_entrega_dias' => 5, 'calificacion' => 4.4],
-        ];
+        $proveedor1 = Proveedor::create([
+            'codigo' => 'PROV-001',
+            'nombre' => 'Truper El Salvador',
+            'email' => 'ventas@truper.com.sv',
+            'telefono' => '2244-1111',
+            'pais' => 'El Salvador',
+            'estado' => 'activo',
+        ]);
         
-        foreach ($proveedores as $prov) {
-            Proveedor::create(array_merge($prov, [
-                'pais' => 'El Salvador',
-                'departamento' => 'San Salvador',
-                'estado' => 'activo',
-            ]));
-        }
-
+        $proveedor2 = Proveedor::create([
+            'codigo' => 'PROV-002',
+            'nombre' => 'Pinturas Comex',
+            'email' => 'pedidos@comex.com',
+            'telefono' => '2222-2222',
+            'pais' => 'El Salvador',
+            'estado' => 'activo',
+        ]);
+        
+        $proveedor3 = Proveedor::create([
+            'codigo' => 'PROV-003',
+            'nombre' => 'Distribuidora La Selecta',
+            'email' => 'ventas@laselecta.com.sv',
+            'telefono' => '2222-3333',
+            'pais' => 'El Salvador',
+            'estado' => 'activo',
+        ]);
+        
         // ═══════════════════════════════════════════════════════════════════
-        // 3. ALMACENES (6 SUCURSALES)
+        // 4. ALMACENES (6 SUCURSALES)
         // ═══════════════════════════════════════════════════════════════════
         
         $almacenesData = [
-            ['codigo' => 'ALM-001', 'nombre' => 'San Salvador (Central)', 'direccion' => 'Blvd. Constitución #1500, San Salvador', 'responsable' => 'Carlos Martínez', 'telefono' => '2222-1111', 'es_principal' => true],
-            ['codigo' => 'ALM-002', 'nombre' => 'Santa Ana', 'direccion' => 'Final Av. Independencia #45, Santa Ana', 'responsable' => 'Ana Rodríguez', 'telefono' => '2444-2222', 'es_principal' => false],
-            ['codigo' => 'ALM-003', 'nombre' => 'San Miguel', 'direccion' => 'Calle El Progreso #78, San Miguel', 'responsable' => 'José García', 'telefono' => '2666-3333', 'es_principal' => false],
-            ['codigo' => 'ALM-004', 'nombre' => 'La Libertad', 'direccion' => 'Carretera Litoral Km 32, La Libertad', 'responsable' => 'Marlene López', 'telefono' => '2333-4444', 'es_principal' => false],
-            ['codigo' => 'ALM-005', 'nombre' => 'Sonsonate', 'direccion' => '6a Calle Poniente #23, Sonsonate', 'responsable' => 'Roberto Méndez', 'telefono' => '2444-5555', 'es_principal' => false],
-            ['codigo' => 'ALM-006', 'nombre' => 'Usulután', 'direccion' => 'Av. Francisco Funes #12, Usulután', 'responsable' => 'Lilian Flores', 'telefono' => '2666-6666', 'es_principal' => false],
+            ['codigo' => 'ALM-001', 'nombre' => 'San Salvador (Central)', 'es_principal' => true, 'activo' => true],
+            ['codigo' => 'ALM-002', 'nombre' => 'Santa Ana', 'es_principal' => false, 'activo' => true],
+            ['codigo' => 'ALM-003', 'nombre' => 'San Miguel', 'es_principal' => false, 'activo' => true],
+            ['codigo' => 'ALM-004', 'nombre' => 'La Libertad', 'es_principal' => false, 'activo' => true],
+            ['codigo' => 'ALM-005', 'nombre' => 'Sonsonate', 'es_principal' => false, 'activo' => true],
+            ['codigo' => 'ALM-006', 'nombre' => 'Usulután', 'es_principal' => false, 'activo' => true],
         ];
         
         $almacenes = [];
         foreach ($almacenesData as $data) {
             $almacenes[] = Almacen::create($data);
         }
-
+        
         // ═══════════════════════════════════════════════════════════════════
-        // 4. USUARIOS POR SUCURSAL
+        // 5. PRODUCTOS CON STOCK REAL
         // ═══════════════════════════════════════════════════════════════════
         
-        // Super Admin (ve todo)
-        User::create([
-            'name' => 'Super Administrador',
-            'email' => 'superadmin@tracelog.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        
-        // Usuario por cada sucursal: Admin, Cajero, Supervisor Bodega
-        $rolesPorSucursal = [
-            1 => ['San Salvador', 'admin.ss', 'cajero.ss', 'bodega.ss'],
-            2 => ['Santa Ana', 'admin.sa', 'cajero.sa', 'bodega.sa'],
-            3 => ['San Miguel', 'admin.sm', 'cajero.sm', 'bodega.sm'],
-            4 => ['La Libertad', 'admin.ll', 'cajero.ll', 'bodega.ll'],
-            5 => ['Sonsonate', 'admin.so', 'cajero.so', 'bodega.so'],
-            6 => ['Usulután', 'admin.us', 'cajero.us', 'bodega.us'],
+        $productosLista = [
+            ['codigo' => 'PROD-001', 'nombre' => 'Taladro Percutor 1/2" 650W', 'precio_compra' => 45.00, 'precio_venta' => 69.99, 'stock' => 25, 'min' => 5, 'max' => 30, 'categoria' => 1],
+            ['codigo' => 'PROD-002', 'nombre' => 'Rotomartillo SDS Plus 800W', 'precio_compra' => 85.00, 'precio_venta' => 129.99, 'stock' => 15, 'min' => 3, 'max' => 20, 'categoria' => 1],
+            ['codigo' => 'PROD-003', 'nombre' => 'Esmeril Angular 4-1/2" 850W', 'precio_compra' => 32.00, 'precio_venta' => 49.99, 'stock' => 35, 'min' => 8, 'max' => 40, 'categoria' => 1],
+            ['codigo' => 'PROD-004', 'nombre' => 'Sierra Caladora 550W', 'precio_compra' => 38.00, 'precio_venta' => 59.99, 'stock' => 20, 'min' => 4, 'max' => 25, 'categoria' => 1],
+            ['codigo' => 'PROD-005', 'nombre' => 'Juego de Llaves Combinadas 12pz', 'precio_compra' => 25.00, 'precio_venta' => 39.99, 'stock' => 45, 'min' => 10, 'max' => 50, 'categoria' => 2],
+            ['codigo' => 'PROD-006', 'nombre' => 'Desarmador de Precisión 7pz', 'precio_compra' => 8.00, 'precio_venta' => 14.99, 'stock' => 70, 'min' => 15, 'max' => 80, 'categoria' => 2],
+            ['codigo' => 'PROD-007', 'nombre' => 'Martillo de Carpintero 16 oz', 'precio_compra' => 6.50, 'precio_venta' => 12.99, 'stock' => 50, 'min' => 12, 'max' => 60, 'categoria' => 2],
+            ['codigo' => 'PROD-008', 'nombre' => 'Pinza de Presión 10"', 'precio_compra' => 5.00, 'precio_venta' => 9.99, 'stock' => 40, 'min' => 10, 'max' => 50, 'categoria' => 2],
+            ['codigo' => 'PROD-009', 'nombre' => 'Cemento Gris 42.5 kg', 'precio_compra' => 7.50, 'precio_venta' => 11.50, 'stock' => 250, 'min' => 50, 'max' => 300, 'categoria' => 3],
+            ['codigo' => 'PROD-010', 'nombre' => 'Varilla Corrugada 3/8" x 6m', 'precio_compra' => 6.00, 'precio_venta' => 9.00, 'stock' => 150, 'min' => 40, 'max' => 200, 'categoria' => 3],
+            ['codigo' => 'PROD-011', 'nombre' => 'Block de Concreto 15x20x40', 'precio_compra' => 0.45, 'precio_venta' => 0.85, 'stock' => 800, 'min' => 200, 'max' => 1000, 'categoria' => 3],
+            ['codigo' => 'PROD-012', 'nombre' => 'Urea Agrícola 46% (50kg)', 'precio_compra' => 35.00, 'precio_venta' => 49.99, 'stock' => 60, 'min' => 15, 'max' => 80, 'categoria' => 4],
+            ['codigo' => 'PROD-013', 'nombre' => 'Fosfato Diamónico DAP (50kg)', 'precio_compra' => 42.00, 'precio_venta' => 59.99, 'stock' => 45, 'min' => 10, 'max' => 60, 'categoria' => 4],
+            ['codigo' => 'PROD-014', 'nombre' => 'Fertilizante Foliar 20-20-20', 'precio_compra' => 8.00, 'precio_venta' => 14.99, 'stock' => 85, 'min' => 20, 'max' => 100, 'categoria' => 4],
+            ['codigo' => 'PROD-015', 'nombre' => 'Pintura Esmalte Negro 1 galón', 'precio_compra' => 12.00, 'precio_venta' => 19.99, 'stock' => 50, 'min' => 10, 'max' => 60, 'categoria' => 5],
+            ['codigo' => 'PROD-016', 'nombre' => 'Pintura Látex Blanco 1 galón', 'precio_compra' => 10.00, 'precio_venta' => 16.99, 'stock' => 65, 'min' => 15, 'max' => 80, 'categoria' => 5],
+            ['codigo' => 'PROD-017', 'nombre' => 'Thinner para Pintura 1 litro', 'precio_compra' => 4.00, 'precio_venta' => 8.99, 'stock' => 90, 'min' => 20, 'max' => 100, 'categoria' => 5],
+            ['codigo' => 'PROD-018', 'nombre' => 'Clavos de Acero 2" (libra)', 'precio_compra' => 1.20, 'precio_venta' => 2.49, 'stock' => 180, 'min' => 30, 'max' => 200, 'categoria' => 6],
+            ['codigo' => 'PROD-019', 'nombre' => 'Tornillos Autoperforantes 1"', 'precio_compra' => 3.00, 'precio_venta' => 5.99, 'stock' => 100, 'min' => 20, 'max' => 120, 'categoria' => 6],
+            ['codigo' => 'PROD-020', 'nombre' => 'Lubricante WD-40 300ml', 'precio_compra' => 3.50, 'precio_venta' => 6.99, 'stock' => 70, 'min' => 15, 'max' => 80, 'categoria' => 6],
+            ['codigo' => 'PROD-021', 'nombre' => 'Taladro de Impacto 20V', 'precio_compra' => 95.00, 'precio_venta' => 149.99, 'stock' => 12, 'min' => 3, 'max' => 25, 'categoria' => 1],
+            ['codigo' => 'PROD-022', 'nombre' => 'Sierra Circular 7-1/4"', 'precio_compra' => 75.00, 'precio_venta' => 119.99, 'stock' => 18, 'min' => 4, 'max' => 30, 'categoria' => 1],
+            ['codigo' => 'PROD-023', 'nombre' => 'Cinta Métrica 5m', 'precio_compra' => 2.50, 'precio_venta' => 4.99, 'stock' => 120, 'min' => 30, 'max' => 150, 'categoria' => 2],
+            ['codigo' => 'PROD-024', 'nombre' => 'Nivel de Mano 60cm', 'precio_compra' => 8.00, 'precio_venta' => 14.99, 'stock' => 35, 'min' => 10, 'max' => 50, 'categoria' => 2],
+            ['codigo' => 'PROD-025', 'nombre' => 'Calcomanía Reflectiva', 'precio_compra' => 1.00, 'precio_venta' => 2.50, 'stock' => 500, 'min' => 100, 'max' => 600, 'categoria' => 8],
+            ['codigo' => 'PROD-026', 'nombre' => 'Guantes de Seguridad', 'precio_compra' => 3.00, 'precio_venta' => 5.99, 'stock' => 80, 'min' => 20, 'max' => 100, 'categoria' => 8],
+            ['codigo' => 'PROD-027', 'nombre' => 'Casco de Seguridad Industrial', 'precio_compra' => 6.00, 'precio_venta' => 12.99, 'stock' => 45, 'min' => 10, 'max' => 60, 'categoria' => 8],
+            ['codigo' => 'PROD-028', 'nombre' => 'Machete para Jardín', 'precio_compra' => 8.00, 'precio_venta' => 15.99, 'stock' => 30, 'min' => 8, 'max' => 40, 'categoria' => 7],
+            ['codigo' => 'PROD-029', 'nombre' => 'Rastrillo de Jardín', 'precio_compra' => 7.50, 'precio_venta' => 13.99, 'stock' => 25, 'min' => 6, 'max' => 35, 'categoria' => 7],
+            ['codigo' => 'PROD-030', 'nombre' => 'Manguera de Jardín 50 pies', 'precio_compra' => 12.00, 'precio_venta' => 19.99, 'stock' => 20, 'min' => 5, 'max' => 30, 'categoria' => 7],
         ];
         
-        foreach ($rolesPorSucursal as $sucursalId => [$nombreSucursal, $adminEmail, $cajeroEmail, $bodegaEmail]) {
-            // Administrador de sucursal
-            User::create([
-                'name' => "Administrador {$nombreSucursal}",
-                'email' => "{$adminEmail}@tracelog.com",
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]);
-            
-            // Cajero de sucursal
-            User::create([
-                'name' => "Cajero {$nombreSucursal}",
-                'email' => "{$cajeroEmail}@tracelog.com",
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]);
-            
-            // Supervisor de Bodega
-            User::create([
-                'name' => "Supervisor Bodega {$nombreSucursal}",
-                'email' => "{$bodegaEmail}@tracelog.com",
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]);
-        }
-
-        // ═══════════════════════════════════════════════════════════════════
-        // 5. PRODUCTOS (100+ productos de ferretería/agricultura)
-        // ═══════════════════════════════════════════════════════════════════
-        
-        $productosData = [
-            // Herramientas Eléctricas (categoría 1)
-            ['codigo' => 'PROD-001', 'sku' => 'TAL-001', 'nombre' => 'Taladro Percutor 1/2" 650W', 'precio_compra' => 45.00, 'precio_venta' => 69.99, 'stock_minimo' => 5, 'stock_maximo' => 30, 'categoria' => 1],
-            ['codigo' => 'PROD-002', 'sku' => 'ROT-001', 'nombre' => 'Rotomartillo SDS Plus 800W', 'precio_compra' => 85.00, 'precio_venta' => 129.99, 'stock_minimo' => 3, 'stock_maximo' => 20, 'categoria' => 1],
-            ['codigo' => 'PROD-003', 'sku' => 'ESM-001', 'nombre' => 'Esmeril Angular 4-1/2" 850W', 'precio_compra' => 32.00, 'precio_venta' => 49.99, 'stock_minimo' => 8, 'stock_maximo' => 40, 'categoria' => 1],
-            ['codigo' => 'PROD-004', 'sku' => 'SIE-001', 'nombre' => 'Sierra Caladora 550W', 'precio_compra' => 38.00, 'precio_venta' => 59.99, 'stock_minimo' => 4, 'stock_maximo' => 25, 'categoria' => 1],
-            ['codigo' => 'PROD-005', 'sku' => 'DIS-001', 'nombre' => 'Disco de Corte 4-1/2" (10 uds)', 'precio_compra' => 5.00, 'precio_venta' => 9.99, 'stock_minimo' => 20, 'stock_maximo' => 100, 'categoria' => 1],
-            
-            // Herramientas Manuales (categoría 2)
-            ['codigo' => 'PROD-006', 'sku' => 'JGO-001', 'nombre' => 'Juego de Llaves Combinadas 12 piezas', 'precio_compra' => 25.00, 'precio_venta' => 39.99, 'stock_minimo' => 10, 'stock_maximo' => 50, 'categoria' => 2],
-            ['codigo' => 'PROD-007', 'sku' => 'DES-001', 'nombre' => 'Desarmador de Precisión 7 piezas', 'precio_compra' => 8.00, 'precio_venta' => 14.99, 'stock_minimo' => 15, 'stock_maximo' => 80, 'categoria' => 2],
-            ['codigo' => 'PROD-008', 'sku' => 'MAR-001', 'nombre' => 'Martillo de Carpintero 16 oz', 'precio_compra' => 6.50, 'precio_venta' => 12.99, 'stock_minimo' => 12, 'stock_maximo' => 60, 'categoria' => 2],
-            ['codigo' => 'PROD-009', 'sku' => 'PIN-002', 'nombre' => 'Pinza de Presión 10"', 'precio_compra' => 5.00, 'precio_venta' => 9.99, 'stock_minimo' => 10, 'stock_maximo' => 50, 'categoria' => 2],
-            ['codigo' => 'PROD-010', 'sku' => 'COR-001', 'nombre' => 'Cortador de Cerámica 40cm', 'precio_compra' => 18.00, 'precio_venta' => 29.99, 'stock_minimo' => 5, 'stock_maximo' => 25, 'categoria' => 2],
-            
-            // Materiales de Construcción (categoría 3)
-            ['codigo' => 'PROD-011', 'sku' => 'CEM-001', 'nombre' => 'Cemento Gris 42.5 kg', 'precio_compra' => 7.50, 'precio_venta' => 11.50, 'stock_minimo' => 50, 'stock_maximo' => 300, 'categoria' => 3],
-            ['codigo' => 'PROD-012', 'sku' => 'VAR-003', 'nombre' => 'Varilla Corrugada 3/8" x 6m', 'precio_compra' => 6.00, 'precio_venta' => 9.00, 'stock_minimo' => 40, 'stock_maximo' => 200, 'categoria' => 3],
-            ['codigo' => 'PROD-013', 'sku' => 'BLO-001', 'nombre' => 'Block de Concreto 15x20x40', 'precio_compra' => 0.45, 'precio_venta' => 0.85, 'stock_minimo' => 200, 'stock_maximo' => 1000, 'categoria' => 3],
-            ['codigo' => 'PROD-014', 'sku' => 'ARE-001', 'nombre' => 'Arena de Río (m3)', 'precio_compra' => 20.00, 'precio_venta' => 30.00, 'stock_minimo' => 20, 'stock_maximo' => 100, 'categoria' => 3],
-            ['codigo' => 'PROD-015', 'sku' => 'GRA-001', 'nombre' => 'Grava Triturada (m3)', 'precio_compra' => 18.00, 'precio_venta' => 28.00, 'stock_minimo' => 15, 'stock_maximo' => 80, 'categoria' => 3],
-            
-            // Fertilizantes (categoría 4)
-            ['codigo' => 'PROD-016', 'sku' => 'URE-001', 'nombre' => 'Urea Agrícola 46% (50kg)', 'precio_compra' => 35.00, 'precio_venta' => 49.99, 'stock_minimo' => 15, 'stock_maximo' => 80, 'categoria' => 4],
-            ['codigo' => 'PROD-017', 'sku' => 'FOS-001', 'nombre' => 'Fosfato Diamónico DAP (50kg)', 'precio_compra' => 42.00, 'precio_venta' => 59.99, 'stock_minimo' => 10, 'stock_maximo' => 60, 'categoria' => 4],
-            ['codigo' => 'PROD-018', 'sku' => 'NIT-001', 'nombre' => 'Nitrato de Amonio (50kg)', 'precio_compra' => 38.00, 'precio_venta' => 54.99, 'stock_minimo' => 10, 'stock_maximo' => 50, 'categoria' => 4],
-            ['codigo' => 'PROD-019', 'sku' => 'FOL-001', 'nombre' => 'Fertilizante Foliar 20-20-20 (1kg)', 'precio_compra' => 8.00, 'precio_venta' => 14.99, 'stock_minimo' => 20, 'stock_maximo' => 100, 'categoria' => 4],
-            ['codigo' => 'PROD-020', 'sku' => 'HER-001', 'nombre' => 'Herbicida Glifosato 1L', 'precio_compra' => 12.00, 'precio_venta' => 19.99, 'stock_minimo' => 15, 'stock_maximo' => 70, 'categoria' => 4],
-            
-            // Pinturas (categoría 5)
-            ['codigo' => 'PROD-021', 'sku' => 'PNT-001', 'nombre' => 'Pintura Esmalte Negro 1 galón', 'precio_compra' => 12.00, 'precio_venta' => 19.99, 'stock_minimo' => 10, 'stock_maximo' => 60, 'categoria' => 5],
-            ['codigo' => 'PROD-022', 'sku' => 'PNT-002', 'nombre' => 'Pintura Látex Blanco 1 galón', 'precio_compra' => 10.00, 'precio_venta' => 16.99, 'stock_minimo' => 15, 'stock_maximo' => 80, 'categoria' => 5],
-            ['codigo' => 'PROD-023', 'sku' => 'PNT-003', 'nombre' => 'Pintura Vinílica (4 litros)', 'precio_compra' => 18.00, 'precio_venta' => 29.99, 'stock_minimo' => 8, 'stock_maximo' => 40, 'categoria' => 5],
-            ['codigo' => 'PROD-024', 'sku' => 'THI-001', 'nombre' => 'Thinner para Pintura 1 litro', 'precio_compra' => 4.00, 'precio_venta' => 8.99, 'stock_minimo' => 20, 'stock_maximo' => 100, 'categoria' => 5],
-            ['codigo' => 'PROD-025', 'sku' => 'PIN-003', 'nombre' => 'Pintura Epóxica 1 galón', 'precio_compra' => 25.00, 'precio_venta' => 39.99, 'stock_minimo' => 5, 'stock_maximo' => 30, 'categoria' => 5],
-            
-            // Ferretería General (categoría 6)
-            ['codigo' => 'PROD-026', 'sku' => 'CLV-001', 'nombre' => 'Clavos de Acero 2" (libra)', 'precio_compra' => 1.20, 'precio_venta' => 2.49, 'stock_minimo' => 30, 'stock_maximo' => 200, 'categoria' => 6],
-            ['codigo' => 'PROD-027', 'sku' => 'TOR-001', 'nombre' => 'Tornillos Autoperforantes 1" (100 uds)', 'precio_compra' => 3.00, 'precio_venta' => 5.99, 'stock_minimo' => 20, 'stock_maximo' => 120, 'categoria' => 6],
-            ['codigo' => 'PROD-028', 'sku' => 'LUB-001', 'nombre' => 'Lubricante WD-40 300ml', 'precio_compra' => 3.50, 'precio_venta' => 6.99, 'stock_minimo' => 15, 'stock_maximo' => 80, 'categoria' => 6],
-            ['codigo' => 'PROD-029', 'sku' => 'PEG-001', 'nombre' => 'Pegamento Instantáneo (3g)', 'precio_compra' => 1.50, 'precio_venta' => 3.49, 'stock_minimo' => 25, 'stock_maximo' => 150, 'categoria' => 6],
-            ['codigo' => 'PROD-030', 'sku' => 'CIN-001', 'nombre' => 'Cinta Aislante Negra', 'precio_compra' => 0.80, 'precio_venta' => 1.99, 'stock_minimo' => 40, 'stock_maximo' => 200, 'categoria' => 6],
-            
-            // Jardinería (categoría 7)
-            ['codigo' => 'PROD-031', 'sku' => 'MAN-001', 'nombre' => 'Manguera Jardín 50 pies', 'precio_compra' => 12.00, 'precio_venta' => 19.99, 'stock_minimo' => 8, 'stock_maximo' => 40, 'categoria' => 7],
-            ['codigo' => 'PROD-032', 'sku' => 'ROC-001', 'nombre' => 'Rociador Manual 2 litros', 'precio_compra' => 5.00, 'precio_venta' => 9.99, 'stock_minimo' => 10, 'stock_maximo' => 50, 'categoria' => 7],
-            ['codigo' => 'PROD-033', 'sku' => 'POD-001', 'nombre' => 'Podadora de Césped 3.5HP', 'precio_compra' => 120.00, 'precio_venta' => 189.99, 'stock_minimo' => 2, 'stock_maximo' => 15, 'categoria' => 7],
-            ['codigo' => 'PROD-034', 'sku' => 'MOT-001', 'nombre' => 'Motosierra 18" 45cc', 'precio_compra' => 95.00, 'precio_venta' => 149.99, 'stock_minimo' => 3, 'stock_maximo' => 20, 'categoria' => 7],
-            ['codigo' => 'PROD-035', 'sku' => 'PALA-001', 'nombre' => 'Pala de Jardín', 'precio_compra' => 6.00, 'precio_venta' => 11.99, 'stock_minimo' => 15, 'stock_maximo' => 60, 'categoria' => 7],
-            
-            // Seguridad Industrial (categoría 8)
-            ['codigo' => 'PROD-036', 'sku' => 'CAS-001', 'nombre' => 'Casco de Seguridad Industrial', 'precio_compra' => 6.00, 'precio_venta' => 12.99, 'stock_minimo' => 15, 'stock_maximo' => 80, 'categoria' => 8],
-            ['codigo' => 'PROD-037', 'sku' => 'GUA-001', 'nombre' => 'Guantes de Nitrilo (par)', 'precio_compra' => 2.50, 'precio_venta' => 5.49, 'stock_minimo' => 20, 'stock_maximo' => 120, 'categoria' => 8],
-            ['codigo' => 'PROD-038', 'sku' => 'CHA-001', 'nombre' => 'Chaleco Reflectivo', 'precio_compra' => 4.00, 'precio_venta' => 8.99, 'stock_minimo' => 15, 'stock_maximo' => 70, 'categoria' => 8],
-            ['codigo' => 'PROD-039', 'sku' => 'CON-001', 'nombre' => 'Cono de Seguridad 28"', 'precio_compra' => 8.00, 'precio_venta' => 14.99, 'stock_minimo' => 10, 'stock_maximo' => 50, 'categoria' => 8],
-            ['codigo' => 'PROD-040', 'sku' => 'ARN-001', 'nombre' => 'Arnés de Seguridad', 'precio_compra' => 25.00, 'precio_venta' => 39.99, 'stock_minimo' => 5, 'stock_maximo' => 25, 'categoria' => 8],
-        ];
-        
-        // Generar productos adicionales para llegar a 100
         $productos = [];
-        
-        foreach ($productosData as $data) {
-            $categoriaId = $data['categoria'];
-            unset($data['categoria']);
-            
-            $productos[] = Producto::create(array_merge($data, [
-                'categoria_id' => $categoriaId,
-                'proveedor_id' => rand(1, count($proveedores)),
+        foreach ($productosLista as $data) {
+            $producto = Producto::create([
+                'codigo' => $data['codigo'],
+                'nombre' => $data['nombre'],
+                'categoria_id' => $data['categoria'],
+                'proveedor_id' => $proveedor1->id,
                 'unidad_medida' => 'unidad',
-                'ubicacion_almacen' => 'A-' . str_pad(rand(1, 10), 2, '0', STR_PAD_LEFT) . '-' . str_pad(rand(1, 10), 2, '0', STR_PAD_LEFT),
-                'estado' => 'activo',
-            ]));
-        }
-        
-        // Completar hasta 100 productos con datos aleatorios
-        $categoriasIds = Categoria::pluck('id')->toArray(); 
-
-        for ($i = 41; $i <= 100; $i++) {
-            $categoriaId = $categoriasIds[array_rand($categoriasIds)];
-            $precioCompra = rand(3, 150);
-            $productos[] = Producto::create([
-                'codigo' => 'PROD-' . str_pad($i, 3, '0', STR_PAD_LEFT),
-                'sku' => 'SKU-' . str_pad($i, 4, '0', STR_PAD_LEFT),
-                'nombre' => 'Producto ' . $i,
-                'categoria_id' => $categoriaId,
-                'proveedor_id' => rand(1, count($proveedores)),
-                'unidad_medida' => 'unidad',
-                'precio_compra' => $precioCompra,
-                'precio_venta' => $precioCompra * 1.5,
-                'stock_minimo' => rand(5, 30),
-                'stock_maximo' => rand(50, 200),
-                'ubicacion_almacen' => 'B-' . str_pad(rand(1, 10), 2, '0', STR_PAD_LEFT) . '-' . str_pad(rand(1, 10), 2, '0', STR_PAD_LEFT),
+                'precio_compra' => $data['precio_compra'],
+                'precio_venta' => $data['precio_venta'],
+                'stock_actual' => $data['stock'],
+                'stock_minimo' => $data['min'],
+                'stock_maximo' => $data['max'],
+                'ubicacion_almacen' => 'A-' . str_pad(rand(1, 10), 2, '0', STR_PAD_LEFT),
                 'estado' => 'activo',
             ]);
+            $productos[] = $producto;
         }
-
+        
         // ═══════════════════════════════════════════════════════════════════
-        // 6. INVENTARIO POR SUCURSAL (stocks variados)
+        // 6. INVENTARIO POR SUCURSAL (distribuir stock)
         // ═══════════════════════════════════════════════════════════════════
         
         foreach ($productos as $producto) {
-            foreach ($almacenes as $idx => $almacen) {
-                // Crear stock variado por sucursal
-                $stockBase = rand($producto->stock_minimo * 0.5, $producto->stock_maximo * 1.2);
-                
-                // Crear situaciones especiales según la sucursal
-                if ($idx == 0) {
-                    // Principal: Stock normal
-                    $stock = rand($producto->stock_minimo, $producto->stock_maximo);
-                } elseif ($idx == 1) {
-                    // Santa Ana: SOBRESTOCK
-                    $stock = rand($producto->stock_maximo, $producto->stock_maximo * 1.5);
-                } elseif ($idx == 2) {
-                    // San Miguel: STOCK BAJO
-                    $stock = rand(0, $producto->stock_minimo);
+            // Buscar el almacén principal
+            $principal = Almacen::where('es_principal', true)->first();
+            
+            // Asignar 60% del stock al almacén principal
+            $stockPrincipal = round($producto->stock_actual * 0.6);
+            
+            // Repartir el 40% restante entre las otras 5 sucursales
+            $stockRestante = $producto->stock_actual - $stockPrincipal;
+            $stockPorSucursal = round($stockRestante / 5);
+            
+            foreach ($almacenes as $almacen) {
+                if ($almacen->es_principal) {
+                    $stock = $stockPrincipal;
                 } else {
-                    // Otras sucursales: variado
-                    $stock = rand(0, $producto->stock_maximo * 1.2);
+                    $stock = $stockPorSucursal;
                 }
                 
                 InventarioAlmacen::create([
@@ -257,55 +203,47 @@ class DatabaseSeeder extends Seeder
                     'stock_actual' => $stock,
                     'stock_minimo' => $producto->stock_minimo,
                     'stock_maximo' => $producto->stock_maximo,
-                    'punto_reorden' => $producto->stock_minimo * 0.8,
+                    'punto_reorden' => round($producto->stock_minimo * 0.8),
                 ]);
             }
         }
-
+        
         // ═══════════════════════════════════════════════════════════════════
         // 7. CLIENTES
         // ═══════════════════════════════════════════════════════════════════
         
-        $clientesData = [
-            ['codigo' => 'CLI-001', 'nombre' => 'Constructora Alas Doradas', 'tipo' => 'mayorista', 'limite_credito' => 25000, 'dias_credito' => 45],
-            ['codigo' => 'CLI-002', 'nombre' => 'Agro Finca San Pablo', 'tipo' => 'mayorista', 'limite_credito' => 15000, 'dias_credito' => 30],
-            ['codigo' => 'CLI-003', 'nombre' => 'Ferretería El Constructor', 'tipo' => 'minorista', 'limite_credito' => 5000, 'dias_credito' => 15],
-            ['codigo' => 'CLI-004', 'nombre' => 'Distribuidora La Lima', 'tipo' => 'mayorista', 'limite_credito' => 20000, 'dias_credito' => 30],
-            ['codigo' => 'CLI-005', 'nombre' => 'Comercial Ferretera S.A.', 'tipo' => 'mayorista', 'limite_credito' => 30000, 'dias_credito' => 45],
-            ['codigo' => 'CLI-006', 'nombre' => 'Inversiones Martínez', 'tipo' => 'corporativo', 'limite_credito' => 100000, 'dias_credito' => 60],
-            ['codigo' => 'CLI-007', 'nombre' => 'Ferretería Santa Ana', 'tipo' => 'minorista', 'limite_credito' => 8000, 'dias_credito' => 15],
-            ['codigo' => 'CLI-008', 'nombre' => 'Agroservicios El Salvador', 'tipo' => 'mayorista', 'limite_credito' => 18000, 'dias_credito' => 30],
+        $clientes = [
+            ['codigo' => 'CLI-001', 'nombre' => 'Supermercado El Colono', 'tipo' => 'mayorista', 'limite_credito' => 15000, 'email' => 'compras@elcolono.com', 'telefono' => '2333-4444'],
+            ['codigo' => 'CLI-002', 'nombre' => 'Farmacia San Nicolás', 'tipo' => 'minorista', 'limite_credito' => 5000, 'email' => 'pedidos@fsn.com', 'telefono' => '2211-9988'],
+            ['codigo' => 'CLI-003', 'nombre' => 'Hotel Sheraton Presidente', 'tipo' => 'corporativo', 'limite_credito' => 50000, 'email' => 'compras@sheraton.com', 'telefono' => '2283-4000'],
+            ['codigo' => 'CLI-004', 'nombre' => 'Constructora Alas Doradas', 'tipo' => 'mayorista', 'limite_credito' => 25000, 'email' => 'compras@alasdoradas.com', 'telefono' => '2255-1234'],
+            ['codigo' => 'CLI-005', 'nombre' => 'Agro Finca San Pablo', 'tipo' => 'mayorista', 'limite_credito' => 18000, 'email' => 'ventas@agrofinca.com', 'telefono' => '2444-5678'],
+            ['codigo' => 'CLI-006', 'nombre' => 'Restaurante La Pampa', 'tipo' => 'minorista', 'limite_credito' => 8000, 'email' => 'pedidos@lapampa.com', 'telefono' => '2278-1234'],
+            ['codigo' => 'CLI-007', 'nombre' => 'Ferretería El Constructor', 'tipo' => 'minorista', 'limite_credito' => 5000, 'email' => 'ventas@elconstructor.com', 'telefono' => '2222-7777'],
+            ['codigo' => 'CLI-008', 'nombre' => 'Distribuidora La Lima', 'tipo' => 'mayorista', 'limite_credito' => 20000, 'email' => 'compras@lalima.com', 'telefono' => '2333-8888'],
         ];
         
-        foreach ($clientesData as $data) {
+        foreach ($clientes as $data) {
             Cliente::create(array_merge($data, [
-                'email' => strtolower(str_replace(' ', '', $data['nombre'])) . '@correo.com',
-                'telefono' => '2' . rand(2000, 2999) . '-' . rand(1000, 9999),
-                'direccion_principal' => 'Dirección ' . $data['nombre'],
                 'estado' => 'activo',
+                'direccion_principal' => 'Dirección ' . $data['nombre'],
             ]));
         }
-
+        
         // ═══════════════════════════════════════════════════════════════════
         // 8. TRANSPORTISTAS
         // ═══════════════════════════════════════════════════════════════════
         
         $transportistas = [
-            ['codigo' => 'TRANS-001', 'nombre' => 'Transportes El Halcón', 'tipo' => 'externo', 'vehiculo_tipo' => 'camion', 'capacidad_kg' => 8000, 'tarifa_km' => 0.55],
-            ['codigo' => 'TRANS-002', 'nombre' => 'Fletes Express', 'tipo' => 'externo', 'vehiculo_tipo' => 'furgon', 'capacidad_kg' => 1500, 'tarifa_km' => 0.35],
-            ['codigo' => 'TRANS-003', 'nombre' => 'Transporte Propio (Central)', 'tipo' => 'propio', 'vehiculo_tipo' => 'camion', 'capacidad_kg' => 5000, 'tarifa_km' => 0.45],
-            ['codigo' => 'TRANS-004', 'nombre' => 'Logística Rápida', 'tipo' => 'externo', 'vehiculo_tipo' => 'pickup', 'capacidad_kg' => 1000, 'tarifa_fija' => 40.00],
+            ['codigo' => 'TRANS-001', 'nombre' => 'Transportes El Halcón', 'tipo' => 'externo', 'vehiculo_tipo' => 'camion', 'capacidad_kg' => 8000, 'estado' => 'disponible'],
+            ['codigo' => 'TRANS-002', 'nombre' => 'Fletes Express', 'tipo' => 'externo', 'vehiculo_tipo' => 'pickup', 'capacidad_kg' => 1500, 'estado' => 'disponible'],
+            ['codigo' => 'TRANS-003', 'nombre' => 'Transporte Propio Central', 'tipo' => 'propio', 'vehiculo_tipo' => 'camion', 'capacidad_kg' => 5000, 'estado' => 'disponible'],
         ];
         
         foreach ($transportistas as $data) {
-            Transportista::create(array_merge($data, [
-                'vehiculo_placa' => strtoupper(Str::random(3)) . '-' . rand(100, 999),
-                'conductor_nombre' => 'Conductor ' . $data['nombre'],
-                'conductor_telefono' => '7' . rand(0000, 9999) . '-' . rand(0000, 9999),
-                'estado' => 'disponible',
-            ]));
+            Transportista::create($data);
         }
-
+        
         $this->command->info('✅ TraceLog: Base de datos sembrada exitosamente.');
         $this->command->info('');
         $this->command->info('═══════════════════════════════════════════════════════════');
@@ -342,5 +280,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info('   Admin: admin.us@tracelog.com / password');
         $this->command->info('   Cajero: cajero.us@tracelog.com / password');
         $this->command->info('   Supervisor: bodega.us@tracelog.com / password');
+        $this->command->info('');
+        $this->command->info('📧 Coordinador Logístico: logistica@tracelog.com / password');
     }
 }

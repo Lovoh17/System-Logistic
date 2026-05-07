@@ -1,21 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\RoleBasedAccess;
+
 
 Route::get('/', function () {
-    return redirect('/admin');
-});
+    return view('landing');
+})->name('landing');
 
-// Ruta para el dashboard de ventas (cajeros)
-Route::middleware(['auth', RoleBasedAccess::class])->group(function () {
-    Route::get('/ventas', function () {
-        return view('ventas.dashboard');
-    })->name('ventas.dashboard');
-});
-
-// Logout
+// Logout general
 Route::post('/logout', function () {
     auth()->logout();
-    return redirect('/admin/login');
+    return redirect('/');
 })->name('logout');

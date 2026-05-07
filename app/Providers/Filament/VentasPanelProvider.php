@@ -2,18 +2,23 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\PuntoVenta;
+use App\Filament\Ventas\Pages\DashboardVentas;
+use App\Models\User;
+use Filament\Http\Middleware\Authenticate;
+use Filament\Http\Middleware\DisableBladeIconComponents;
+use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Http\Middleware\Authenticate;
-use Filament\View\PanelsRenderHook;
-use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Session\Middleware\AuthenticateSession;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
-use Illuminate\Routing\Middleware\SubstituteBindings;
-
+use Illuminate\Routing\Middleware\SubstituteBindings;   // ← sin espacio
+use Illuminate\Session\Middleware\AuthenticateSession;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+use App\Filament\Resources\{InventarioAlmacenResource,ProductoResource};
 class VentasPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -22,19 +27,38 @@ class VentasPanelProvider extends PanelProvider
             ->id('ventas')
             ->path('ventas')
             ->login()
+
+            ->homeUrl(fn (): string => User::getHomeUrl())
+
             ->colors([
                 'primary' => '#10b981',
+                'gray'    => '#6b7280',
             ])
             ->brandName('TraceLog - Punto de Venta')
             ->brandLogo(asset('images/logo.png'))
             ->brandLogoHeight('2rem')
+            ->darkMode(true)
+            ->sidebarCollapsibleOnDesktop()
+
+            ->navigationGroups([
+                NavigationGroup::make('Caja')->icon('heroicon-o-shopping-cart'),
+                NavigationGroup::make('Clientes')->icon('heroicon-o-users'),
+                NavigationGroup::make('Historial')->icon('heroicon-o-document-text'),
+            ])
+
+            ->pages([
+                PuntoVenta::class,       // Punto de venta (página principal)
+                //DashboardVentas::class,  // Dashboard de ventas
+            ])
+
             ->resources([
                 \App\Filament\Resources\ClienteResource::class,
                 \App\Filament\Resources\PedidoVentaResource::class,
+                
+                InventarioAlmacenResource::class,
+                ProductoResource::class,
             ])
-            ->widgets([
-                \App\Filament\Widgets\PuntoVentaWidget::class,
-            ])
+
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -42,7 +66,9 @@ class VentasPanelProvider extends PanelProvider
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
-                SubstituteBindings::class,
+                SubstituteBindings::class,          // ← corregido
+                DisableBladeIconComponents::class,
+                DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
