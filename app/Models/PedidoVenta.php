@@ -16,7 +16,7 @@ class PedidoVenta extends Model
     protected $table = 'pedidos_venta';
 
     protected $fillable = [
-        'numero', 'cliente_id', 'user_id',
+        'numero', 'cliente_id', 'user_id', 'almacen_id',
         'fecha_pedido', 'fecha_requerida', 'fecha_entrega_real',
         'estado', 'prioridad',
         'subtotal', 'impuesto', 'descuento', 'costo_envio', 'total',
@@ -48,6 +48,11 @@ class PedidoVenta extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class);
+    }
+
+    public function almacen()
+    {
+        return $this->belongsTo(Almacen::class);
     }
 
     public function items(): HasMany

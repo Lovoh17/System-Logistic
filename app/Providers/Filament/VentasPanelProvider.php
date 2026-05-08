@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\PuntoVenta;
+use App\Filament\Pages\InventarioSucursal;
 use App\Filament\Ventas\Pages\DashboardVentas;
 use App\Models\User;
 use Filament\Http\Middleware\Authenticate;
@@ -18,7 +19,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;   // ← sin espacio
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use App\Filament\Resources\{InventarioAlmacenResource,ProductoResource};
+use App\Filament\Resources\{InventarioAlmacenResource,ProductoResource };
+
 class VentasPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -48,11 +50,10 @@ class VentasPanelProvider extends PanelProvider
 
             ->pages([
                 PuntoVenta::class,       // Punto de venta (página principal)
-                //DashboardVentas::class,  // Dashboard de ventas
+                InventarioSucursal::class
             ])
 
             ->resources([
-                \App\Filament\Resources\ClienteResource::class,
                 \App\Filament\Resources\PedidoVentaResource::class,
                 
                 InventarioAlmacenResource::class,

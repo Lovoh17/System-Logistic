@@ -7,6 +7,8 @@ use App\Models\MovimientoInventario;
 use App\Models\Producto;
 use App\Models\PedidoVenta;
 use App\Models\PedidoVentaItem;
+use App\Models\InventarioAlmacen;
+use App\Models\Almacen;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
@@ -30,34 +32,56 @@ class PuntoVenta extends Page
         $this->items = session()->get('carrito_ventas', []);
     }
 
-    // Obtener clientes
+    public function getSucursalActualProperty()
+    {
+        $user = auth()->user();
+        if ($user && $user->almacen_id) {
+            return Almacen::find($user->almacen_id);
+        }
+        return null;
+    }
+
     public function getClientesProperty()
     {
         return Cliente::where('estado', 'activo')->orderBy('nombre')->get();
     }
 
-    // Obtener productos con búsqueda en vivo
+    // Productos con búsqueda SOLO cuando hay texto (no todos al cargar)
     public function getProductosProperty()
     {
-        $query = Producto::where('estado', 'activo')
-            ->where('stock_actual', '>', 0);
+        $user = auth()->user();
         
-        if (!empty($this->searchTerm) && strlen($this->searchTerm) >= 1) {
-            $query->where(function ($q) {
-                $q->where('nombre', 'like', "%{$this->searchTerm}%")
-                  ->orWhere('codigo', 'like', "%{$this->searchTerm}%")
-                  ->orWhere('sku', 'like', "%{$this->searchTerm}%");
-            });
+        // Si no hay término de búsqueda o es muy corto, NO mostrar nada
+        if (empty($this->searchTerm) || strlen($this->searchTerm) < 2) {
+            return collect();
         }
         
-        return $query->orderBy('nombre')->limit(50)->get();
+        $query = InventarioAlmacen::query()
+            ->with(['producto'])
+            ->where('almacen_id', $user->almacen_id)
+            ->where('stock_actual', '>', 0)
+            ->whereHas('producto', function ($q) {
+                $q->where('estado', 'activo')
+                  ->where(function ($sq) {
+                      $sq->where('nombre', 'like', "%{$this->searchTerm}%")
+                        ->orWhere('codigo', 'like', "%{$this->searchTerm}%")
+                        ->orWhere('sku', 'like', "%{$this->searchTerm}%");
+                  });
+            });
+        
+        return $query->limit(20)->get();
     }
 
-    // Obtener productos destacados
+    // Productos destacados (también filtrados por sucursal)
     public function getProductosRapidosProperty()
     {
-        return Producto::where('estado', 'activo')
+        $user = auth()->user();
+        
+        return InventarioAlmacen::query()
+            ->with(['producto'])
+            ->where('almacen_id', $user->almacen_id)
             ->where('stock_actual', '>', 0)
+            ->whereHas('producto', fn($q) => $q->where('estado', 'activo'))
             ->orderByDesc('stock_actual')
             ->limit(12)
             ->get();
@@ -83,33 +107,39 @@ class PuntoVenta extends Page
         return (int) collect($this->items)->sum('cantidad');
     }
 
-    public function agregarProductoDesdeSelect()
+    public function agregarProducto(int $productoId, int $cantidad = 1): void
     {
-        if (!$this->producto_seleccionado_id) {
-            Notification::make()->title('Seleccione un producto')->warning()->send();
+        $user = auth()->user();
+        
+        // Obtener el inventario de la sucursal del usuario
+        $inventario = InventarioAlmacen::where('producto_id', $productoId)
+            ->where('almacen_id', $user->almacen_id)
+            ->with(['producto'])
+            ->first();
+
+        if (!$inventario) {
+            Notification::make()->title('Producto no disponible en esta sucursal')->danger()->send();
             return;
         }
 
-        $this->agregarProducto($this->producto_seleccionado_id, $this->cantidad);
-        $this->producto_seleccionado_id = null;
-        $this->cantidad = 1;
-    }
+        $producto = $inventario->producto;
+        $stockDisponible = $inventario->stock_actual;
 
-    public function agregarProducto(int $productoId, int $cantidad = 1): void
-    {
-        $producto = Producto::find($productoId);
-
-        if (!$producto) {
-            Notification::make()->title('Producto no encontrado')->danger()->send();
+        if ($cantidad > $stockDisponible) {
+            Notification::make()
+                ->title('Stock insuficiente')
+                ->body("Disponible: {$stockDisponible} unidades")
+                ->danger()
+                ->send();
             return;
         }
 
         $cantidadActual = $this->items[$productoId]['cantidad'] ?? 0;
 
-        if (($cantidadActual + $cantidad) > $producto->stock_actual) {
+        if (($cantidadActual + $cantidad) > $stockDisponible) {
             Notification::make()
                 ->title('Stock insuficiente')
-                ->body("Disponible: {$producto->stock_actual} | En carrito: {$cantidadActual}")
+                ->body("Disponible: {$stockDisponible} | En carrito: {$cantidadActual}")
                 ->danger()
                 ->send();
             return;
@@ -129,6 +159,7 @@ class PuntoVenta extends Page
         }
 
         $this->guardarCarrito();
+        $this->searchTerm = '';
         Notification::make()
             ->title("✅ {$producto->nombre} agregado")
             ->success()
@@ -142,12 +173,15 @@ class PuntoVenta extends Page
             return;
         }
 
-        $producto = Producto::find($productoId);
+        $user = auth()->user();
+        $inventario = InventarioAlmacen::where('producto_id', $productoId)
+            ->where('almacen_id', $user->almacen_id)
+            ->first();
 
-        if ($producto && $cantidad > $producto->stock_actual) {
+        if ($inventario && $cantidad > $inventario->stock_actual) {
             Notification::make()
                 ->title('Stock insuficiente')
-                ->body("Máximo disponible: {$producto->stock_actual}")
+                ->body("Máximo disponible: {$inventario->stock_actual}")
                 ->danger()
                 ->send();
             return;
@@ -201,6 +235,7 @@ class PuntoVenta extends Page
                     'numero' => PedidoVenta::generarNumero(),
                     'cliente_id' => $this->cliente_id,
                     'user_id' => auth()->id(),
+                    'almacen_id' => auth()->user()->almacen_id,
                     'fecha_pedido' => now(),
                     'estado' => 'entregado',
                     'subtotal' => $subtotal,
@@ -220,27 +255,34 @@ class PuntoVenta extends Page
                         'subtotal' => $item['subtotal'],
                     ]);
 
-                    $producto = Producto::lockForUpdate()->find($item['id']);
-                    $stockAnterior = $producto->stock_actual;
-                    $stockNuevo = $stockAnterior - $item['cantidad'];
-
-                    $producto->update(['stock_actual' => $stockNuevo]);
-
-                    MovimientoInventario::create([
-                        'numero' => MovimientoInventario::generarNumero(),
-                        'producto_id' => $producto->id,
-                        'user_id' => auth()->id(),
-                        'tipo' => 'salida_venta',
-                        'cantidad' => $item['cantidad'],
-                        'stock_anterior' => $stockAnterior,
-                        'stock_nuevo' => $stockNuevo,
-                        'costo_unitario' => $item['precio'],
-                        'costo_total' => $item['subtotal'],
-                        'referencia_type' => PedidoVenta::class,
-                        'referencia_id' => $pedido->id,
-                        'motivo' => "Venta POS - {$pedido->numero}",
-                        'fecha_movimiento' => now(),
-                    ]);
+                    // Actualizar stock en inventario_almacen (sucursal del usuario)
+                    $user = auth()->user();
+                    $inventario = InventarioAlmacen::where('producto_id', $item['id'])
+                        ->where('almacen_id', $user->almacen_id)
+                        ->first();
+                    
+                    if ($inventario) {
+                        $stockAnterior = $inventario->stock_actual;
+                        $stockNuevo = $stockAnterior - $item['cantidad'];
+                        $inventario->update(['stock_actual' => $stockNuevo]);
+                        
+                        MovimientoInventario::create([
+                            'numero' => MovimientoInventario::generarNumero(),
+                            'producto_id' => $item['id'],
+                            'almacen_id' => $user->almacen_id,
+                            'user_id' => auth()->id(),
+                            'tipo' => 'salida_venta',
+                            'cantidad' => $item['cantidad'],
+                            'stock_anterior' => $stockAnterior,
+                            'stock_nuevo' => $stockNuevo,
+                            'costo_unitario' => $item['precio'],
+                            'costo_total' => $item['subtotal'],
+                            'referencia_type' => PedidoVenta::class,
+                            'referencia_id' => $pedido->id,
+                            'motivo' => "Venta POS - {$pedido->numero}",
+                            'fecha_movimiento' => now(),
+                        ]);
+                    }
                 }
 
                 Notification::make()

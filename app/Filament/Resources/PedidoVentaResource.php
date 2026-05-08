@@ -101,6 +101,15 @@ class PedidoVentaResource extends Resource
                         ])
                         ->default('directo')
                         ->columnSpan(1),
+
+                    Forms\Components\Select::make('almacen_id')
+                        ->label('Sucursal')
+                        ->relationship('almacen', 'nombre')
+                        ->searchable()
+                        ->preload()
+                        ->default(fn() => auth()->user()->almacen_id)
+                        ->disabled(fn() => auth()->user()->rol !== 'super-admin')
+                        ->columnSpan(1),
                 ]),
 
             Forms\Components\Section::make('Dirección de Entrega')
@@ -285,6 +294,14 @@ class PedidoVentaResource extends Resource
                         'danger'  => 'urgente',
                     ]),
 
+                Tables\Columns\TextColumn::make('almacen.nombre')
+                    ->label('Sucursal')
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(),
+
                 Tables\Columns\BadgeColumn::make('estado')
                     ->colors([
                         'gray'    => 'borrador',
@@ -328,6 +345,11 @@ class PedidoVentaResource extends Resource
                         'alta'    => 'Alta',
                         'urgente' => 'Urgente',
                     ]),
+                
+                Tables\Filters\SelectFilter::make('almacen_id')
+                    ->label('Sucursal')
+                    ->relationship('almacen', 'nombre')
+                    ->multiple(),
 
                 Tables\Filters\Filter::make('fecha_pedido')
                     ->form([
