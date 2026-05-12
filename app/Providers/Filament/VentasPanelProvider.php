@@ -49,7 +49,7 @@ class VentasPanelProvider extends PanelProvider
             ])
 
             ->pages([
-                PuntoVenta::class,       // Punto de venta (página principal)
+                PuntoVenta::class,       
                 InventarioSucursal::class
             ])
 

@@ -42,10 +42,10 @@ class TransportistaResource extends Resource
 
                     Forms\Components\Select::make('estado')
                         ->options([
-                            'disponible'    => '✅ Disponible',
-                            'en_ruta'       => '🚛 En Ruta',
-                            'mantenimiento' => '🔧 Mantenimiento',
-                            'inactivo'      => '❌ Inactivo',
+                            'disponible'    => 'Disponible',
+                            'en_ruta'       => 'En Ruta',
+                            'mantenimiento' => 'Mantenimiento',
+                            'inactivo'      => 'Inactivo',
                         ])
                         ->default('disponible')->required()->columnSpan(1),
 
