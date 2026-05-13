@@ -14,6 +14,15 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            // rol incorporado directamente (era un alter table separado)
+            $table->enum('rol', [
+                'super_admin',
+                'admin_sucursal',
+                'cajero',
+                'supervisor_bodega',
+                'logistica',
+            ])->default('cajero');
+            // almacen_id se agrega después de crear almacenes (FK circular imposible aquí)
             $table->rememberToken();
             $table->timestamps();
         });
