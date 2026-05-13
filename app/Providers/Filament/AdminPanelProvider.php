@@ -42,7 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('AgroAlvarado')
             ->brandLogo(asset('images/logo.png')) 
             ->brandLogoHeight('3.5rem')
-            ->darkMode(true)
+            ->darkMode(false)
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 NavigationGroup::make('Gestión de Socios')->icon('heroicon-o-users'),

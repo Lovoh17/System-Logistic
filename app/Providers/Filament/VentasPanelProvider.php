@@ -39,7 +39,7 @@ class VentasPanelProvider extends PanelProvider
             ->brandName('TraceLog - Punto de Venta')
             ->brandLogo(asset('images/logo.png'))
             ->brandLogoHeight('2rem')
-            ->darkMode(true)
+            ->darkMode(false)
             ->sidebarCollapsibleOnDesktop()
 
             ->navigationGroups([

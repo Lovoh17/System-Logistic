@@ -40,6 +40,7 @@ return [
         App\Providers\AppServiceProvider::class,
         App\Providers\Filament\AdminPanelProvider::class,
         App\Providers\Filament\VentasPanelProvider::class,
+        App\Providers\Filament\LogisticaPanelProvider::class,
     ],
 
     'aliases' => Illuminate\Foundation\AliasLoader::getInstance()->getAliases(),

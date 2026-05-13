@@ -49,6 +49,7 @@
     45 => 'App\\Providers\\AppServiceProvider',
     46 => 'App\\Providers\\Filament\\AdminPanelProvider',
     47 => 'App\\Providers\\Filament\\VentasPanelProvider',
+    48 => 'App\\Providers\\Filament\\LogisticaPanelProvider',
   ),
   'eager' => 
   array (
@@ -86,6 +87,7 @@
     31 => 'App\\Providers\\AppServiceProvider',
     32 => 'App\\Providers\\Filament\\AdminPanelProvider',
     33 => 'App\\Providers\\Filament\\VentasPanelProvider',
+    34 => 'App\\Providers\\Filament\\LogisticaPanelProvider',
   ),
   'deferred' => 
   array (
