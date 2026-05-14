@@ -6,19 +6,19 @@ use App\Filament\Resources\ProductoResource\Pages;
 use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Models\Categoria;
+use App\Models\Almacen;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
-//exports de excel
+// exports de excel
 use App\Exports\InventarioSucursalExport;
 use App\Exports\InventarioGeneralExport;
 use Maatwebsite\Excel\Facades\Excel;
-use Filament\Tables\Actions\BulkAction;
-use Illuminate\Database\Eloquent\Collection;
 
 class ProductoResource extends Resource
 {
@@ -85,6 +85,7 @@ class ProductoResource extends Resource
                         ->preload()
                         ->createOptionForm([
                             Forms\Components\TextInput::make('nombre')->required(),
+                            Forms\Components\TextInput::make('slug')->required(),
                         ])
                         ->columnSpan(1),
 
@@ -145,35 +146,71 @@ class ProductoResource extends Resource
                         ->columnSpan(1),
                 ]),
 
-            Forms\Components\Section::make('Control de Stock')
-                ->icon('heroicon-o-chart-bar')
+            Forms\Components\Section::make('Configuración de Stock por Sucursal')
+                ->icon('heroicon-o-building-storefront')
+                ->description('Configurar stock mínimo, máximo y punto de reorden para cada sucursal')
+                ->schema([
+                    Forms\Components\Repeater::make('inventarioAlmacen')
+                        ->relationship('inventarioAlmacen')
+                        ->label('')
+                        ->schema([
+                            Forms\Components\Select::make('almacen_id')
+                                ->label('Sucursal')
+                                ->options(Almacen::where('activo', true)->pluck('nombre', 'id'))
+                                ->required()
+                                ->searchable()
+                                ->columnSpan(2),
+
+                            Forms\Components\Grid::make(4)
+                                ->schema([
+                                    Forms\Components\TextInput::make('stock_actual')
+                                        ->label('Stock Actual')
+                                        ->numeric()
+                                        ->default(0)
+                                        ->step(0.001)
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->helperText('Solo lectura - se actualiza con movimientos')
+                                        ->columnSpan(1),
+
+                                    Forms\Components\TextInput::make('stock_minimo')
+                                        ->label('Stock Mínimo')
+                                        ->numeric()
+                                        ->default(0)
+                                        ->step(0.001)
+                                        ->required()
+                                        ->columnSpan(1),
+
+                                    Forms\Components\TextInput::make('stock_maximo')
+                                        ->label('Stock Máximo')
+                                        ->numeric()
+                                        ->default(0)
+                                        ->step(0.001)
+                                        ->required()
+                                        ->columnSpan(1),
+
+                                    Forms\Components\TextInput::make('punto_reorden')
+                                        ->label('Punto de Reorden')
+                                        ->numeric()
+                                        ->default(0)
+                                        ->step(0.001)
+                                        ->helperText('Nivel que activa alerta de reabastecimiento')
+                                        ->columnSpan(1),
+                                ]),
+                        ])
+                        ->addActionLabel('Agregar configuración por sucursal')
+                        ->defaultItems(1)
+                        ->minItems(1)
+                        ->columnSpanFull(),
+                ]),
+
+            Forms\Components\Section::make('Información Adicional')
+                ->icon('heroicon-o-information-circle')
                 ->columns(3)
                 ->schema([
-                    Forms\Components\TextInput::make('stock_actual')
-                        ->label('Stock Actual')
-                        ->numeric()
-                        ->default(0)
-                        ->disabled()
-                        ->dehydrated()
-                        ->columnSpan(1),
-
-                    Forms\Components\TextInput::make('stock_minimo')
-                        ->label('Stock Mínimo (Alerta)')
-                        ->numeric()
-                        ->default(0)
-                        ->step(0.001)
-                        ->columnSpan(1),
-
-                    Forms\Components\TextInput::make('stock_maximo')
-                        ->label('Stock Máximo')
-                        ->numeric()
-                        ->default(0)
-                        ->step(0.001)
-                        ->columnSpan(1),
-
                     Forms\Components\TextInput::make('ubicacion_almacen')
-                        ->label('Ubicación en Almacén')
-                        ->placeholder('Ej: A-01-03'  )
+                        ->label('Ubicación en Almacén (Referencia)')
+                        ->placeholder('Ej: A-01-03')
                         ->maxLength(50)
                         ->columnSpan(1),
 
@@ -182,25 +219,23 @@ class ProductoResource extends Resource
                         ->numeric()
                         ->step(0.001)
                         ->columnSpan(1),
-                ]),
 
-            Forms\Components\Section::make('Atributos Especiales')
-                ->icon('heroicon-o-exclamation-triangle')
-                ->columns(3)
-                ->schema([
                     Forms\Components\Toggle::make('requiere_refrigeracion')
                         ->label('Requiere Refrigeración')
-                        ->default(false),
+                        ->default(false)
+                        ->columnSpan(1),
 
                     Forms\Components\Toggle::make('es_perecedero')
                         ->label('Es Perecedero')
-                        ->default(false),
+                        ->default(false)
+                        ->columnSpan(1),
 
                     Forms\Components\TextInput::make('vida_util_dias')
                         ->label('Vida Útil (días)')
                         ->numeric()
                         ->minValue(0)
-                        ->visible(fn (Forms\Get $get) => $get('es_perecedero')),
+                        ->visible(fn(Forms\Get $get) => $get('es_perecedero'))
+                        ->columnSpan(1),
 
                     Forms\Components\FileUpload::make('imagen')
                         ->label('Imagen del Producto')
@@ -244,20 +279,34 @@ class ProductoResource extends Resource
                     ->money('USD')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('stock_actual')
-                    ->label('Stock')
+                Tables\Columns\TextColumn::make('stock_total')
+                    ->label('Stock Total')
                     ->sortable()
                     ->alignCenter()
                     ->badge()
                     ->color(fn($record) => $record->stock_color)
                     ->formatStateUsing(fn($state, $record) => $state . ' ' . $record->unidad_medida),
 
+                Tables\Columns\TextColumn::make('stock_almacenes')
+                    ->label('Stock por Sucursal')
+                    ->formatStateUsing(function ($record) {
+                        $stocks = $record->inventarioAlmacen()
+                            ->with('almacen')
+                            ->get()
+                            ->map(fn($inv) => "{$inv->almacen->nombre}: {$inv->stock_actual} {$record->unidad_medida}")
+                            ->implode("\n");
+                        return $stocks ?: 'Sin stock configurado';
+                    })
+                    ->html()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\IconColumn::make('requiere_refrigeracion')
                     ->label('❄️')
                     ->boolean()
                     ->toggleable(),
 
-                Tables\Columns\BadgeColumn::make('estado')
+                Tables\Columns\TextColumn::make('estado')
+                    ->badge()
                     ->colors([
                         'success' => 'activo',
                         'gray'    => 'inactivo',
@@ -272,15 +321,50 @@ class ProductoResource extends Resource
                         'descontinuado' => 'Descontinuado',
                     ]),
                 Tables\Filters\Filter::make('stock_bajo')
-                    ->label('Stock Bajo')
-                    ->query(fn (Builder $query) => $query->whereColumn('stock_actual', '<=', 'stock_minimo')),
+                    ->label('Stock Bajo (alguna sucursal)')
+                    ->query(fn(Builder $query) => $query->whereHas('inventarioAlmacen', function($q) {
+                        $q->whereColumn('stock_actual', '<=', 'stock_minimo');
+                    })),
                 Tables\Filters\Filter::make('sin_stock')
-                    ->label('Sin Stock')
-                    ->query(fn (Builder $query) => $query->where('stock_actual', '<=', 0)),
+                    ->label('Sin Stock (todas las sucursales)')
+                    ->query(fn(Builder $query) => $query->whereDoesntHave('inventarioAlmacen', function($q) {
+                        $q->where('stock_actual', '>', 0);
+                    })),
+                Tables\Filters\SelectFilter::make('categoria_id')
+                    ->label('Categoría')
+                    ->relationship('categoria', 'nombre'),
+                Tables\Filters\SelectFilter::make('proveedor_id')
+                    ->label('Proveedor')
+                    ->relationship('proveedor', 'nombre'),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('ver_stock')
+                    ->label('Ver Stock')
+                    ->icon('heroicon-o-chart-bar')
+                    ->color('info')
+                    ->modalHeading(fn($record) => "Stock de {$record->nombre}")
+                    ->modalContent(function ($record) {
+                        $stocks = $record->inventarioAlmacen()
+                            ->with('almacen')
+                            ->get();
+                        
+                        $html = '<div class="space-y-2">';
+                        foreach ($stocks as $inv) {
+                            $color = $inv->stock_actual <= $inv->stock_minimo ? 'text-danger-600' : 'text-success-600';
+                            $html .= "<div class='p-3 border rounded-lg'>
+                                <strong class='text-lg'>{$inv->almacen->nombre}</strong><br>
+                                <span>📦 Stock actual: <strong class='{$color}'>{$inv->stock_actual} {$record->unidad_medida}</strong></span><br>
+                                <span class='text-sm text-gray-500'>📉 Mínimo: {$inv->stock_minimo} | 📈 Máximo: {$inv->stock_maximo} | 🔔 Reorden: {$inv->punto_reorden}</span>
+                            </div>";
+                        }
+                        $html .= '</div>';
+                        
+                        return new \Illuminate\Support\HtmlString($html);
+                    })
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Cerrar'),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('exportar_general')
@@ -301,13 +385,38 @@ class ProductoResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    BulkAction::make('actualizar_stock_minimo')
+                        ->label('Actualizar Stock Mínimo')
+                        ->icon('heroicon-m-pencil')
+                        ->form([
+                            Forms\Components\TextInput::make('stock_minimo')
+                                ->label('Nuevo Stock Mínimo')
+                                ->numeric()
+                                ->required(),
+                            Forms\Components\Select::make('almacen_id')
+                                ->label('Aplicar a sucursal')
+                                ->options(Almacen::where('activo', true)->pluck('nombre', 'id'))
+                                ->placeholder('Todas las sucursales'),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            foreach ($records as $record) {
+                                $query = $record->inventarioAlmacen();
+                                if (isset($data['almacen_id'])) {
+                                    $query->where('almacen_id', $data['almacen_id']);
+                                }
+                                $query->update(['stock_minimo' => $data['stock_minimo']]);
+                            }
+                        }),
                 ]),
             ]);
     }
 
     public static function getNavigationBadge(): ?string
     {
-        $sinStock = static::getModel()::sinStock()->count();
+        // Productos con stock total = 0 en todas las sucursales
+        $sinStock = static::getModel()::whereDoesntHave('inventarioAlmacen', function($q) {
+            $q->where('stock_actual', '>', 0);
+        })->count();
         return $sinStock > 0 ? (string) $sinStock : null;
     }
 
@@ -318,7 +427,7 @@ class ProductoResource extends Resource
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return 'Productos sin stock';
+        return 'Productos sin stock en todas las sucursales';
     }
 
     public static function getPages(): array

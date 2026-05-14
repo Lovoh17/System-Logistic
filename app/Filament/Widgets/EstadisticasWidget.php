@@ -8,8 +8,10 @@ use App\Models\Envio;
 use App\Models\Producto;
 use App\Models\Cliente;
 use App\Models\Proveedor;
+use App\Models\InventarioAlmacen;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\DB;
 
 class EstadisticasWidget extends BaseWidget
 {
@@ -21,7 +23,17 @@ class EstadisticasWidget extends BaseWidget
         $ventasMes    = PedidoVenta::whereMonth('created_at', now()->month)->sum('total');
         $pedidosMes   = PedidoVenta::whereMonth('created_at', now()->month)->count();
         $enviosActivos = Envio::whereIn('estado', ['en_transito', 'despachado', 'en_destino'])->count();
-        $stockCritico  = Producto::whereColumn('stock_actual', '<=', 'stock_minimo')->count();
+        
+        // ✅ Stock crítico: productos con stock_actual <= stock_minimo en ALGUNA sucursal
+        $stockCritico = InventarioAlmacen::whereColumn('stock_actual', '<=', 'stock_minimo')
+            ->distinct('producto_id')
+            ->count('producto_id');
+        
+        // Alternativa: contar productos que tienen stock bajo en al menos una sucursal
+        // $stockCritico = Producto::whereHas('inventarioAlmacen', function($q) {
+        //     $q->whereColumn('stock_actual', '<=', 'stock_minimo');
+        // })->count();
+        
         $entregasHoy   = Envio::whereDate('fecha_entrega_real', today())->where('estado', 'entregado')->count();
         $pedidosPend   = PedidoVenta::whereIn('estado', ['confirmado', 'en_preparacion'])->count();
 
@@ -48,7 +60,7 @@ class EstadisticasWidget extends BaseWidget
                 ->color($pedidosPend > 10 ? 'danger' : 'warning'),
 
             Stat::make('Productos Stock Crítico', $stockCritico)
-                ->description('En o por debajo del mínimo')
+                ->description('Productos con stock por debajo del mínimo')
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
                 ->color($stockCritico > 0 ? 'danger' : 'success'),
 
