@@ -21,12 +21,10 @@ return new class extends Migration
 
             $table->index('activo');
         });
-
-        // Ahora que almacenes existe, agregar FK a users
         Schema::table('users', function (Blueprint $table) {
             $table->foreignId('almacen_id')
                   ->nullable()
-                  ->after('rol')
+                  ->after('password')
                   ->constrained('almacenes')
                   ->nullOnDelete();
         });

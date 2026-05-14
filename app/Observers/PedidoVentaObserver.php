@@ -9,16 +9,13 @@ use Illuminate\Support\Facades\DB;
 
 class PedidoVentaObserver
 {
-    /**
-     * Cuando el pedido pasa a "en_preparacion", reserva/descuenta stock.
-     */
+   
     public function updated(PedidoVenta $pedido): void
     {
         if (! $pedido->wasChanged('estado')) {
             return;
         }
 
-        // Descontar stock cuando se pone "en_preparacion"
         if ($pedido->estado === 'en_preparacion' && $pedido->getOriginal('estado') === 'confirmado') {
             DB::transaction(function () use ($pedido) {
                 foreach ($pedido->items as $item) {

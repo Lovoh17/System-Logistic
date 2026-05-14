@@ -17,7 +17,6 @@ return new class extends Migration
                   ->constrained('almacenes')
                   ->cascadeOnDelete();
 
-            // Stock específico de esta ubicación
             $table->decimal('stock_actual', 12, 3)->default(0.000);
             $table->decimal('stock_minimo', 12, 3)->default(0.000);
             $table->decimal('stock_maximo', 12, 3)->default(0.000);
@@ -25,7 +24,6 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // Un producto solo puede tener un registro por almacén
             $table->unique(['producto_id', 'almacen_id']);
         });
     }

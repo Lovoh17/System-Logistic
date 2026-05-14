@@ -14,7 +14,6 @@ return new class extends Migration
             $table->foreignId('proveedor_id')->constrained('proveedores');
             $table->foreignId('user_id')->constrained('users'); // creador
 
-            // Fechas del ciclo de vida
             $table->date('fecha_pedido');
             $table->date('fecha_requerida')->nullable();
             $table->date('fecha_recepcion')->nullable();
@@ -23,7 +22,6 @@ return new class extends Migration
                 'borrador', 'enviado', 'confirmado', 'parcial', 'recibido', 'cancelado',
             ])->default('borrador');
 
-            // Totales
             $table->decimal('subtotal', 12, 2)->default(0.00);
             $table->decimal('impuesto', 12, 2)->default(0.00);
             $table->decimal('descuento', 12, 2)->default(0.00);

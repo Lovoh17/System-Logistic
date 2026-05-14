@@ -13,13 +13,11 @@ return new class extends Migration
             $table->string('numero', 20)->unique();
             $table->foreignId('cliente_id')->constrained('clientes');
             $table->foreignId('user_id')->constrained('users');
-            // Almacén desde el que se despacha (incorporado del alter table separado)
             $table->foreignId('almacen_id')
                   ->nullable()
                   ->constrained('almacenes')
                   ->nullOnDelete();
 
-            // Fechas
             $table->date('fecha_pedido');
             $table->date('fecha_requerida')->nullable();
             $table->date('fecha_entrega_real')->nullable();
@@ -31,7 +29,6 @@ return new class extends Migration
 
             $table->enum('prioridad', ['baja', 'normal', 'alta', 'urgente'])->default('normal');
 
-            // Totales
             $table->decimal('subtotal', 12, 2)->default(0.00);
             $table->decimal('impuesto', 12, 2)->default(0.00);
             $table->decimal('descuento', 12, 2)->default(0.00);
@@ -39,13 +36,17 @@ return new class extends Migration
             $table->decimal('total', 12, 2)->default(0.00);
             $table->char('moneda', 3)->default('USD');
 
-            // Dirección de entrega (desnormalizada por conveniencia — el cliente puede tener varias)
+            $table->foreignId('direccion_entrega_id')
+                  ->nullable()
+                  ->constrained('direcciones_clientes')
+                  ->nullOnDelete();
+
             $table->text('direccion_entrega')->nullable();
             $table->string('departamento_entrega', 80)->nullable();
             $table->string('municipio_entrega', 80)->nullable();
             $table->text('instrucciones_entrega')->nullable();
 
-            $table->string('canal_venta', 30)->default('directo'); // directo|telefono|web|distribuidor
+            $table->string('canal_venta', 30)->default('directo');
             $table->text('notas')->nullable();
             $table->timestamps();
             $table->softDeletes();

@@ -14,7 +14,7 @@ return new class extends Migration
                   ->constrained('envios')
                   ->cascadeOnDelete();
 
-            $table->string('evento', 100);          // Ej: "Salida de bodega", "Llegada a destino"
+            $table->string('evento', 100);
             $table->text('descripcion')->nullable();
             $table->string('ubicacion', 150)->nullable();
             $table->decimal('latitud', 10, 8)->nullable();

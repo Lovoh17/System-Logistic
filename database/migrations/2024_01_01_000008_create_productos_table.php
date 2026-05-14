@@ -15,7 +15,6 @@ return new class extends Migration
             $table->string('nombre', 150);
             $table->text('descripcion')->nullable();
 
-            // Clasificación
             $table->foreignId('categoria_id')
                   ->nullable()
                   ->constrained('categorias')
@@ -25,22 +24,15 @@ return new class extends Migration
                   ->constrained('proveedores')
                   ->nullOnDelete();
 
-            // Unidad y precios
-            $table->string('unidad_medida', 20)->default('unidad'); // unidad|kg|litro|caja|palet
+            $table->string('unidad_medida', 20)->default('unidad'); 
             $table->decimal('precio_compra', 12, 2)->default(0.00);
             $table->decimal('precio_venta', 12, 2)->default(0.00);
 
-            // Stock global (consolidado — por sucursal va en inventario_almacen)
-            $table->decimal('stock_actual', 12, 3)->default(0.000);
-            $table->decimal('stock_minimo', 12, 3)->default(0.000);
-            $table->decimal('stock_maximo', 12, 3)->default(0.000);
-
-            // Atributos físicos
+            
             $table->decimal('peso_kg', 8, 3)->nullable();
-            $table->string('ubicacion_almacen', 50)->nullable(); // Ej: A-01-02
+            $table->string('ubicacion_almacen', 50)->nullable(); 
             $table->string('imagen')->nullable();
 
-            // Atributos especiales
             $table->boolean('requiere_refrigeracion')->default(false);
             $table->boolean('es_perecedero')->default(false);
             $table->unsignedSmallInteger('vida_util_dias')->nullable();
@@ -51,7 +43,6 @@ return new class extends Migration
 
             $table->index('estado');
             $table->index(['categoria_id', 'estado']);
-            $table->index('stock_actual');
         });
     }
 

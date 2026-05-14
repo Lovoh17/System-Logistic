@@ -104,6 +104,6 @@ class ReporteLogistico extends Page implements HasForms
 
     public function getTitle(): string
     {
-        return '📊 Reportes Logísticos';
+        return 'Reportes Logísticos';
     }
 }

@@ -20,7 +20,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Registrar Observers para automatizar el inventario
         PedidoCompra::observe(PedidoCompraObserver::class);
         Traslado::observe(TrasladoObserver::class);
         PedidoVenta::observe(PedidoVentaObserver::class);

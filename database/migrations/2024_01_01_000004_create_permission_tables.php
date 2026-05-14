@@ -20,7 +20,7 @@ return new class extends Migration
             'Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.'
         );
 
-        // ── permissions ──────────────────────────────────────
+        // ── permissions ───────────────────────────────────────
         Schema::create($tableNames['permissions'], static function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name');
@@ -30,6 +30,9 @@ return new class extends Migration
         });
 
         // ── roles ─────────────────────────────────────────────
+        // ℹ️  Los roles equivalentes al antiguo enum son:
+        //    super_admin | admin_sucursal | cajero | supervisor_bodega | logistica
+        //    Crear estos roles en el DatabaseSeeder con Role::create(['name' => '...'])
         Schema::create($tableNames['roles'], static function (Blueprint $table) use ($teams, $columnNames) {
             $table->bigIncrements('id');
             if ($teams || config('permission.testing')) {

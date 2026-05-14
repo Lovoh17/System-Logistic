@@ -33,7 +33,7 @@ return new class extends Migration
             $table->text('direccion')->nullable();
 
             // Condiciones comerciales
-            $table->string('categoria', 30)->default('general'); // general | materia_prima | servicios
+            $table->string('categoria', 30)->default('general'); 
             $table->unsignedSmallInteger('tiempo_entrega_dias')->default(3);
             $table->decimal('calificacion', 3, 2)->default(0.00);
 

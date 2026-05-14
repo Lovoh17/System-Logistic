@@ -10,7 +10,6 @@ class TrasladoObserver
 {
     public function created(Traslado $traslado)
     {
-        // Registrar salida del inventario origen
         $inventarioOrigen = InventarioAlmacen::where('producto_id', $traslado->producto_id)
             ->where('almacen_id', $traslado->almacen_origen_id)
             ->first();
@@ -41,7 +40,6 @@ class TrasladoObserver
     
     public function updated(Traslado $traslado)
     {
-        // Cuando se completa la entrega
         if ($traslado->wasDirty('estado') && $traslado->estado === 'entregado') {
             $inventarioDestino = InventarioAlmacen::where('producto_id', $traslado->producto_id)
                 ->where('almacen_id', $traslado->almacen_destino_id)

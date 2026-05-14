@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('cantidad', 12, 3);
             $table->decimal('cantidad_recibida', 12, 3)->default(0.000);
             $table->decimal('precio_unitario', 12, 2);
-            $table->decimal('descuento', 5, 2)->default(0.00); // porcentaje por ítem
+            $table->decimal('descuento', 5, 2)->default(0.00); 
             $table->decimal('subtotal', 12, 2);
             $table->string('unidad_medida', 20)->nullable();
             $table->text('notas')->nullable();

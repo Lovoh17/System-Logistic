@@ -22,7 +22,7 @@ class LogisticaPanelProvider extends PanelProvider
             ->path('logistica')
             ->login()
             ->colors([
-                'primary' => '#3b82f6', // Azul para logística
+                'primary' => '#3b82f6',
             ])
             ->brandName('TraceLog - Logística')
             ->brandLogo(asset('images/logo.png'))

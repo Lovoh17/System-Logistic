@@ -67,7 +67,7 @@ class VentasPanelProvider extends PanelProvider
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
-                SubstituteBindings::class,          // ← corregido
+                SubstituteBindings::class,          
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])

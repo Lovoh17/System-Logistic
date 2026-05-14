@@ -1,7 +1,4 @@
 <?php
-// ════════════════════════════════════════════════════
-// PAGES — PedidoVentaResource
-// ════════════════════════════════════════════════════
 namespace App\Filament\Resources\PedidoVentaResource\Pages;
 
 use App\Filament\Resources\PedidoVentaResource;

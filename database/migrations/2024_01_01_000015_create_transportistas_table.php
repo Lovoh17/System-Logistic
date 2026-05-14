@@ -12,10 +12,9 @@ return new class extends Migration
             $table->id();
             $table->string('codigo', 20)->unique();
             $table->string('nombre', 150);
-            $table->string('tipo', 30)->default('externo'); // propio | externo
+            $table->string('tipo', 30)->default('externo'); 
 
-            // Datos del vehículo
-            $table->string('vehiculo_tipo', 50)->nullable();  // camion|pickup|furgon|moto
+            $table->string('vehiculo_tipo', 50)->nullable();  
             $table->string('vehiculo_placa', 20)->nullable();
             $table->string('vehiculo_modelo', 80)->nullable();
             $table->decimal('capacidad_kg', 10, 2)->nullable();
@@ -38,7 +37,7 @@ return new class extends Migration
 
             $table->enum('estado', ['disponible', 'en_ruta', 'mantenimiento', 'inactivo'])->default('disponible');
 
-            // Ubicación GPS en tiempo real (incorporado del alter table separado)
+            // Ubicación GPS en tiempo real
             $table->decimal('latitud', 10, 8)->nullable();
             $table->decimal('longitud', 11, 8)->nullable();
             $table->string('ubicacion_actual', 255)->nullable();

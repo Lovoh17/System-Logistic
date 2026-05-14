@@ -19,25 +19,24 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users');
 
             $table->enum('tipo', [
-                'entrada_compra',    // recepción de OC
-                'salida_venta',      // despacho de OV
-                'ajuste_positivo',   // ajuste inventario (+)
-                'ajuste_negativo',   // ajuste inventario (-)
-                'traslado_entrada',  // recepción de traslado
-                'traslado_salida',   // salida por traslado
-                'devolucion_compra', // devolución a proveedor
-                'devolucion_venta',  // devolución de cliente
-                'merma',             // pérdida / daño
-                'inventario_inicial',// carga inicial
+                'entrada_compra',    
+                'salida_venta',      
+                'ajuste_positivo',   
+                'ajuste_negativo',   
+                'traslado_entrada',  
+                'traslado_salida',   
+                'devolucion_compra', 
+                'devolucion_venta',  
+                'merma',             
+                'inventario_inicial',
             ]);
 
             $table->decimal('cantidad', 12, 3);
-            $table->decimal('stock_anterior', 12, 3);
-            $table->decimal('stock_nuevo', 12, 3);
+            $table->decimal('stock_anterior', 12, 3); 
+            $table->decimal('stock_nuevo', 12, 3);    
             $table->decimal('costo_unitario', 12, 4)->nullable();
             $table->decimal('costo_total', 12, 2)->nullable();
 
-            // Referencia polimórfica nullable (ajustes manuales no tienen referencia)
             $table->nullableMorphs('referencia');
 
             $table->string('lote', 50)->nullable();
@@ -46,7 +45,6 @@ return new class extends Migration
             $table->dateTime('fecha_movimiento');
             $table->timestamps();
 
-            // Índices para consultas de kardex y reportes
             $table->index(['producto_id', 'fecha_movimiento']);
             $table->index(['tipo', 'fecha_movimiento']);
             $table->index(['almacen_id', 'producto_id']);

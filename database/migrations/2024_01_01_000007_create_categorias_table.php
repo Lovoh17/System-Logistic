@@ -15,15 +15,17 @@ return new class extends Migration
             $table->text('descripcion')->nullable();
             $table->string('icono', 50)->nullable();
             $table->string('color', 20)->nullable();
-            // Auto-referencia para categorías padre/hijo
+
             $table->foreignId('parent_id')
                   ->nullable()
                   ->constrained('categorias')
                   ->nullOnDelete();
+
             $table->boolean('activo')->default(true);
             $table->timestamps();
 
             $table->index('activo');
+            $table->index('nombre');
         });
     }
 

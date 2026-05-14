@@ -1,7 +1,4 @@
 <?php
-// ════════════════════════════════════════════════════
-// PAGES — MovimientoInventarioResource
-// ════════════════════════════════════════════════════
 namespace App\Filament\Resources\MovimientoInventarioResource\Pages;
 
 use App\Filament\Resources\MovimientoInventarioResource;
