@@ -21,11 +21,4 @@ class CreateTransportista extends CreateRecord
     protected static string $resource = TransportistaResource::class;
 }
 
-class EditTransportista extends EditRecord
-{
-    protected static string $resource = TransportistaResource::class;
-    protected function getHeaderActions(): array
-    {
-        return [Actions\DeleteAction::make()];
-    }
-}
+

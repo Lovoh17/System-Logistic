@@ -55,9 +55,7 @@ class VentasPanelProvider extends PanelProvider
 
             ->resources([
                 \App\Filament\Resources\PedidoVentaResource::class,
-                
                 InventarioAlmacenResource::class,
-                ProductoResource::class,
             ])
 
             ->middleware([

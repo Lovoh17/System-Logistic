@@ -65,28 +65,36 @@ class Cliente extends Model
     public function getTipoLabelAttribute()
     {
         return match($this->tipo) {
-            'minorista' => 'Minorista',
-            'mayorista' => 'Mayorista',
-            'corporativo' => 'Corporativo',
-            default => $this->tipo,
+            'minorista'   => '🛍️ Minorista',
+            'mayorista'   => '🏭 Mayorista',
+            'corporativo' => '🏢 Corporativo',
+            default       => $this->tipo,
         };
     }
 
     public function getEstadoColorAttribute()
     {
         return match($this->estado) {
-            'activo' => 'success',
-            'inactivo' => 'gray',
+            'activo'    => 'success',
+            'inactivo'  => 'gray',
             'bloqueado' => 'danger',
-            default => 'gray',
+            default     => 'gray',
         };
     }
 
-    // Generador de código
+    // ✅ Generador de código mejorado
     public static function generarCodigo()
     {
         $ultimo = self::orderBy('id', 'desc')->first();
-        $numero = $ultimo ? intval(substr($ultimo->codigo, 4)) + 1 : 1;
+        
+        if (!$ultimo || !$ultimo->codigo) {
+            return 'CLI-001';
+        }
+        
+        // Extraer el número del código (ej: CLI-001 -> 1)
+        preg_match('/(\d+)$/', $ultimo->codigo, $matches);
+        $numero = isset($matches[1]) ? intval($matches[1]) + 1 : 1;
+        
         return 'CLI-' . str_pad($numero, 3, '0', STR_PAD_LEFT);
     }
 }

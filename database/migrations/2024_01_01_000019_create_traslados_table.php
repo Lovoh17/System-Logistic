@@ -26,6 +26,7 @@ return new class extends Migration
             $table->dateTime('fecha_completado')->nullable();
 
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['estado', 'created_at']);
         });

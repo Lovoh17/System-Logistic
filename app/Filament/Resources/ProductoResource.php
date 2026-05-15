@@ -14,6 +14,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Collection;
 
 // exports de excel
 use App\Exports\InventarioSucursalExport;
@@ -279,15 +280,16 @@ class ProductoResource extends Resource
                     ->money('USD')
                     ->sortable(),
 
+                // ✅ Stock Total - sin sortable porque es un accesor
                 Tables\Columns\TextColumn::make('stock_total')
                     ->label('Stock Total')
-                    ->sortable()
                     ->alignCenter()
                     ->badge()
                     ->color(fn($record) => $record->stock_color)
-                    ->formatStateUsing(fn($state, $record) => $state . ' ' . $record->unidad_medida),
+                    ->formatStateUsing(fn($record) => $record->stock_total . ' ' . $record->unidad_medida),
 
-                Tables\Columns\TextColumn::make('stock_almacenes')
+                // ✅ Stock por Sucursal (detalle)
+                Tables\Columns\TextColumn::make('stock_por_sucursal')
                     ->label('Stock por Sucursal')
                     ->formatStateUsing(function ($record) {
                         $stocks = $record->inventarioAlmacen()
@@ -341,74 +343,68 @@ class ProductoResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('ver_stock')
-                    ->label('Ver Stock')
-                    ->icon('heroicon-o-chart-bar')
-                    ->color('info')
-                    ->modalHeading(fn($record) => "Stock de {$record->nombre}")
-                    ->modalContent(function ($record) {
-                        $stocks = $record->inventarioAlmacen()
-                            ->with('almacen')
-                            ->get();
-                        
-                        $html = '<div class="space-y-2">';
-                        foreach ($stocks as $inv) {
-                            $color = $inv->stock_actual <= $inv->stock_minimo ? 'text-danger-600' : 'text-success-600';
-                            $html .= "<div class='p-3 border rounded-lg'>
-                                <strong class='text-lg'>{$inv->almacen->nombre}</strong><br>
-                                <span>📦 Stock actual: <strong class='{$color}'>{$inv->stock_actual} {$record->unidad_medida}</strong></span><br>
-                                <span class='text-sm text-gray-500'>📉 Mínimo: {$inv->stock_minimo} | 📈 Máximo: {$inv->stock_maximo} | 🔔 Reorden: {$inv->punto_reorden}</span>
-                            </div>";
-                        }
-                        $html .= '</div>';
-                        
-                        return new \Illuminate\Support\HtmlString($html);
-                    })
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Cerrar'),
-            ])
-            ->headerActions([
-                Tables\Actions\Action::make('exportar_general')
-                    ->label('Exportar Inventario General')
-                    ->icon('heroicon-m-document-arrow-down')
-                    ->color('success')
-                    ->action(function () {
-                        return Excel::download(new InventarioGeneralExport(), 'inventario_general_' . date('Y-m-d') . '.xlsx');
-                    }),
-                Tables\Actions\Action::make('exportar_por_sucursal')
-                    ->label('Exportar por Sucursal')
-                    ->icon('heroicon-m-document-arrow-down')
-                    ->color('info')
-                    ->action(function () {
-                        return Excel::download(new InventarioSucursalExport(), 'inventario_por_sucursal_' . date('Y-m-d') . '.xlsx');
-                    }),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    BulkAction::make('actualizar_stock_minimo')
-                        ->label('Actualizar Stock Mínimo')
-                        ->icon('heroicon-m-pencil')
-                        ->form([
-                            Forms\Components\TextInput::make('stock_minimo')
-                                ->label('Nuevo Stock Mínimo')
-                                ->numeric()
-                                ->required(),
-                            Forms\Components\Select::make('almacen_id')
-                                ->label('Aplicar a sucursal')
-                                ->options(Almacen::where('activo', true)->pluck('nombre', 'id'))
-                                ->placeholder('Todas las sucursales'),
+                ->label('Ver Stock')
+                ->icon('heroicon-o-chart-bar')
+                ->color('info')
+                ->modalHeading(fn($record) => "Stock de {$record->nombre}")
+                ->modalContent(function ($record) {
+                    $stocks = $record->inventarioAlmacen()
+                        ->with('almacen')
+                        ->get();
+                    
+                    return view('filament.Modals.ver-stock', [
+                        'stocks' => $stocks,
+                        'record' => $record,
+                    ]);
+                })
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel('Cerrar'),
                         ])
-                        ->action(function (Collection $records, array $data) {
-                            foreach ($records as $record) {
-                                $query = $record->inventarioAlmacen();
-                                if (isset($data['almacen_id'])) {
-                                    $query->where('almacen_id', $data['almacen_id']);
-                                }
-                                $query->update(['stock_minimo' => $data['stock_minimo']]);
-                            }
-                        }),
-                ]),
-            ]);
+                        ->headerActions([
+                            Tables\Actions\Action::make('exportar_general')
+                                ->label('Exportar Inventario General')
+                                ->icon('heroicon-m-document-arrow-down')
+                                ->color('success')
+                                ->action(function () {
+                                    return Excel::download(new InventarioGeneralExport(), 'inventario_general_' . date('Y-m-d') . '.xlsx');
+                                }),
+                            Tables\Actions\Action::make('exportar_por_sucursal')
+                                ->label('Exportar por Sucursal')
+                                ->icon('heroicon-m-document-arrow-down')
+                                ->color('info')
+                                ->action(function () {
+                                    return Excel::download(new InventarioSucursalExport(), 'inventario_por_sucursal_' . date('Y-m-d') . '.xlsx');
+                                }),
+                        ])
+                        ->bulkActions([
+                            Tables\Actions\BulkActionGroup::make([
+                                Tables\Actions\DeleteBulkAction::make(),
+                                Tables\Actions\BulkAction::make('actualizar_stock_minimo')
+                                    ->label('Actualizar Stock Mínimo')
+                                    ->icon('heroicon-m-pencil')
+                                    ->form([
+                                        Forms\Components\TextInput::make('stock_minimo')
+                                            ->label('Nuevo Stock Mínimo')
+                                            ->numeric()
+                                            ->required()
+                                            ->step(0.001),
+                                        Forms\Components\Select::make('almacen_id')
+                                            ->label('Aplicar a sucursal')
+                                            ->options(Almacen::where('activo', true)->pluck('nombre', 'id'))
+                                            ->placeholder('Todas las sucursales'),
+                                    ])
+                                    ->action(function (Collection $records, array $data) {
+                                        foreach ($records as $record) {
+                                            $query = $record->inventarioAlmacen();
+                                            if (isset($data['almacen_id']) && $data['almacen_id']) {
+                                                $query->where('almacen_id', $data['almacen_id']);
+                                            }
+                                            $query->update(['stock_minimo' => $data['stock_minimo']]);
+                                        }
+                                    }),
+                            ]),
+                        ])
+                        ->defaultSort('codigo', 'asc');
     }
 
     public static function getNavigationBadge(): ?string
@@ -417,6 +413,7 @@ class ProductoResource extends Resource
         $sinStock = static::getModel()::whereDoesntHave('inventarioAlmacen', function($q) {
             $q->where('stock_actual', '>', 0);
         })->count();
+        
         return $sinStock > 0 ? (string) $sinStock : null;
     }
 

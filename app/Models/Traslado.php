@@ -3,12 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Traslado extends Model
 {
-    use SoftDeletes;
 
     protected $table = 'traslados';
 
@@ -74,7 +72,7 @@ class Traslado extends Model
     // Generar número de traslado
     public static function generarNumero(): string
     {
-        $ultimo = self::withTrashed()->orderBy('id', 'desc')->first();
+        $ultimo = self::orderBy('id', 'desc')->first(); // ✅ Quitar withTrashed()
         $numero = $ultimo ? intval(substr($ultimo->numero, -6)) + 1 : 1;
         return 'TRA-' . date('Ymd') . '-' . str_pad($numero, 6, '0', STR_PAD_LEFT);
     }
