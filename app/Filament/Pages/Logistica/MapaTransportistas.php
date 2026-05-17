@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace App\Filament\Pages\Logistica;
 
 use App\Models\Transportista;
 use Filament\Pages\Page;

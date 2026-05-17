@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace App\Filament\Pages\Ventas;
 
 use App\Models\Cliente;
 use App\Services\EmailJSService;

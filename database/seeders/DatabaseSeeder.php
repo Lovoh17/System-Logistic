@@ -633,28 +633,28 @@ class DatabaseSeeder extends Seeder
         // ═══════════════════════════════════════════════════════════════════
 
         $this->command->info('');
-        $this->command->info('✅ TraceLog: Base de datos sembrada exitosamente.');
+        $this->command->info('  TraceLog: Base de datos sembrada exitosamente.');
         $this->command->info('');
         $this->command->info('═══════════════════════════════════════════════════════════');
-        $this->command->info('👤 CREDENCIALES DE ACCESO  (contraseña: password)');
+        $this->command->info('  CREDENCIALES DE ACCESO  (contraseña: password)');
         $this->command->info('═══════════════════════════════════════════════════════════');
-        $this->command->info('👑 superadmin@tracelog.com     → Rol: super_admin');
-        $this->command->info('📧 logistica@tracelog.com      → Rol: logistica');
+        $this->command->info('superadmin@tracelog.com     → Rol: super_admin');
+        $this->command->info('logistica@tracelog.com      → Rol: logistica');
         $this->command->info('');
 
         foreach ($sucursalMap as $code => $info) {
-            $this->command->info("🏪 {$info['nombre']}:");
-            $this->command->info("   admin.{$code}@tracelog.com   → Rol: admin_sucursal");
-            $this->command->info("   cajero.{$code}@tracelog.com  → Rol: cajero");
-            $this->command->info("   bodega.{$code}@tracelog.com  → Rol: supervisor_bodega");
+            $this->command->info("{$info['nombre']}:");
+            $this->command->info("admin.{$code}@tracelog.com   → Rol: admin_sucursal");
+            $this->command->info("cajero.{$code}@tracelog.com  → Rol: cajero");
+            $this->command->info("bodega.{$code}@tracelog.com  → Rol: supervisor_bodega");
         }
 
         $this->command->info('');
-        $this->command->info('📦 Productos creados      : ' . count($productos));
-        $this->command->info('🏪 Almacenes creados      : ' . count($almacenes));
-        $this->command->info('👥 Clientes creados       : ' . count($clientesData));
-        $this->command->info('🚚 Transportistas creados : ' . count($transportistasData));
-        $this->command->info('📊 Registros inventario   : ' . (count($productos) * count($almacenes)));
+        $this->command->info('Productos creados      : ' . count($productos));
+        $this->command->info('Almacenes creados      : ' . count($almacenes));
+        $this->command->info('Clientes creados       : ' . count($clientesData));
+        $this->command->info('Transportistas creados : ' . count($transportistasData));
+        $this->command->info('Registros inventario   : ' . (count($productos) * count($almacenes)));
         $this->command->info('');
     }
 }

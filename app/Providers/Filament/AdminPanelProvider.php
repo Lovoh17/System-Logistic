@@ -3,7 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
-use App\Filament\Pages\MapaTransportistas;
+use App\Filament\Pages\Logistica\MapaTransportistas;
 use App\Filament\Resources\{ClienteResource, TrasladoResource ,InventarioAlmacenResource, UserResource , EnvioResource, MovimientoInventarioResource};
 use App\Filament\Resources\{PedidoCompraResource, PedidoVentaResource, ProductoResource};
 use App\Filament\Resources\{ProveedorResource, TransportistaResource};

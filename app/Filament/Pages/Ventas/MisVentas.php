@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace App\Filament\Pages\Ventas;
 
 use App\Models\PedidoVenta;
 use App\Models\Almacen;

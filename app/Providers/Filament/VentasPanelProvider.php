@@ -2,9 +2,9 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Pages\PuntoVenta;
-use App\Filament\Pages\MisVentas;
-use App\Filament\Pages\InventarioSucursal;
+use App\Filament\Pages\Ventas\PuntoVenta;
+use App\Filament\Pages\Ventas\MisVentas;
+use App\Filament\Pages\Ventas\InventarioSucursal;
 use App\Filament\Ventas\Pages\DashboardVentas;
 use App\Models\User;
 use Filament\Http\Middleware\Authenticate;

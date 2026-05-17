@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class StockCriticoWidget extends BaseWidget
 {
-    protected static ?string $heading = '⚠️ Productos con Stock Crítico';
+    protected static ?string $heading = 'Productos con Stock Crítico';
     protected static ?int $sort = 4;
     protected int | string | array $columnSpan = 1;
 
@@ -107,8 +107,8 @@ class StockCriticoWidget extends BaseWidget
                             
                             $html .= "<div class='p-3 border rounded-lg {$bgClass}'>
                                 <strong class='text-lg'>{$inv->almacen->nombre}</strong><br>
-                                <span>📦 Stock actual: <strong class='{$colorClass}'>{$inv->stock_actual} {$record->unidad_medida}</strong></span><br>
-                                <span class='text-sm text-gray-500'>📉 Mínimo: {$inv->stock_minimo} | 📈 Máximo: {$inv->stock_maximo} | 🔔 Reorden: {$inv->punto_reorden}</span>
+                                <span> Stock actual: <strong class='{$colorClass}'>{$inv->stock_actual} {$record->unidad_medida}</strong></span><br>
+                                <span class='text-sm text-gray-500'> Mínimo: {$inv->stock_minimo} |  Máximo: {$inv->stock_maximo} | 🔔 Reorden: {$inv->punto_reorden}</span>
                             </div>";
                         }
                         $html .= '</div>';
@@ -127,7 +127,7 @@ class StockCriticoWidget extends BaseWidget
             ->emptyStateHeading('No hay productos con stock crítico')
             ->emptyStateIcon('heroicon-o-check-circle')
             ->emptyStateDescription('Todos los productos tienen stock por encima del mínimo')
-            ->defaultSort('codigo', 'asc'); // ✅ Cambiar a una columna real
+            ->defaultSort('codigo', 'asc');
     }
 
     // Título dinámico

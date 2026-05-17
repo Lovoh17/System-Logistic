@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace App\Filament\Pages\Logistica;
 
 use App\Models\Envio;
 use App\Models\PedidoVenta;
