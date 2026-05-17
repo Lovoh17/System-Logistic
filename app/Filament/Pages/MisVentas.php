@@ -123,7 +123,7 @@ class MisVentas extends Page implements HasTable
                 \Filament\Tables\Actions\Action::make('ver')
                     ->label('Ver')
                     ->icon('heroicon-m-eye')
-                    ->url(fn($record) => route('filament.ventas.resources.pedido-ventas.view', $record))
+                    //->url(fn($record) => route('filament.ventas.resources.pedido-ventas', $record))
                     ->openUrlInNewTab(),
             ]);
     }

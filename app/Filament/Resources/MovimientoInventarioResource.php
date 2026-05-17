@@ -40,10 +40,10 @@ class MovimientoInventarioResource extends Resource
 
                     Forms\Components\Select::make('tipo')
                         ->options([
-                            'ajuste_positivo' => '⬆️ Ajuste Positivo (Entrada)',
-                            'ajuste_negativo' => '⬇️ Ajuste Negativo (Salida)',
-                            'merma'           => '🗑️ Merma / Pérdida',
-                            'inventario_inicial' => '📋 Inventario Inicial',
+                            'ajuste_positivo' => '⬆Ajuste Positivo (Entrada)',
+                            'ajuste_negativo' => '⬇Ajuste Negativo (Salida)',
+                            'merma'           => 'Merma / Pérdida',
+                            'inventario_inicial' => 'Inventario Inicial',
                         ])
                         ->required()->columnSpan(1),
 
@@ -71,6 +71,7 @@ class MovimientoInventarioResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+        ->modifyQueryUsing(fn($query) => $query->with(['producto', 'user', 'almacen']))
             ->columns([
                 Tables\Columns\TextColumn::make('numero')
                     ->label('N° Mov.')
@@ -91,41 +92,79 @@ class MovimientoInventarioResource extends Resource
                     ->searchable()->sortable(),
 
                 Tables\Columns\TextColumn::make('tipo')
-                    ->label('Tipo')
-                    ->badge()
-                    ->formatStateUsing(fn($state) => match($state) {
-                        'entrada_compra'     => '🟢 Entrada Compra',
-                        'salida_venta'       => '🔴 Salida Venta',
-                        'ajuste_positivo'    => '⬆️ Ajuste (+)',
-                        'ajuste_negativo'    => '⬇️ Ajuste (-)',
-                        'traslado_entrada'   => '📥 Traslado Entrada',
-                        'traslado_salida'    => '📤 Traslado Salida',
-                        'devolucion_compra'  => '↩️ Dev. Compra',
-                        'devolucion_venta'   => '↪️ Dev. Venta',
-                        'merma'              => '🗑️ Merma',
-                        'inventario_inicial' => '📋 Inv. Inicial',
-                        default              => $state,
-                    })
-                    ->color(fn($record) => $record->tipo_color),
+    ->label('Tipo')
+    ->badge()
+    ->formatStateUsing(fn($state) => match($state) {
+        'entrada_compra'     => 'Entrada Compra',
+        'salida_venta'       => 'Salida Venta',
+        'ajuste_positivo'    => '⬆Ajuste (+)',
+        'ajuste_negativo'    => '⬇Ajuste (-)',
+        'traslado_entrada'   => 'Traslado Entrada',
+        'traslado_salida'    => 'Traslado Salida',
+        'devolucion_compra'  => 'Dev. Compra',
+        'devolucion_venta'   => 'Dev. Venta',
+        'merma'              => 'Merma',
+        'inventario_inicial' => 'Inv. Inicial',
+        default              => $state,
+    })
+    ->color(function($record) {
+        try {
+            return $record->tipo_color;
+        } catch (\Throwable $e) {
+            \Log::error('[Kardex] tipo_color falló', [
+                'movimiento_id' => $record->id,
+                'tipo'          => $record->tipo,
+                'error'         => $e->getMessage(),
+            ]);
+            return 'gray';
+        }
+    }),
 
-                Tables\Columns\TextColumn::make('cantidad')
-                    ->label('Cantidad')
-                    ->alignCenter()
-                    ->formatStateUsing(fn($state, $record) =>
-                        ($record->es_entrada ? '+' : '-') . number_format($state, 2)
-                    )
-                    ->color(fn($record) => $record->es_entrada ? 'success' : 'danger'),
+Tables\Columns\TextColumn::make('cantidad')
+    ->label('Cantidad')
+    ->alignCenter()
+    ->formatStateUsing(function($state, $record) {
+        try {
+            return ($record->es_entrada ? '+' : '-') . number_format($state, 2);
+        } catch (\Throwable $e) {
+            \Log::error('[Kardex] es_entrada falló', [
+                'movimiento_id' => $record->id,
+                'error'         => $e->getMessage(),
+            ]);
+            return number_format($state, 2);
+        }
+    })
+    ->color(function($record) {
+        try {
+            return $record->es_entrada ? 'success' : 'danger';
+        } catch (\Throwable $e) {
+            return 'gray';
+        }
+    }),
 
-                Tables\Columns\TextColumn::make('stock_anterior')
-                    ->label('Stock Ant.')
-                    ->alignCenter()
-                    ->toggleable(),
-
-                Tables\Columns\TextColumn::make('stock_nuevo')
-                    ->label('Stock Nuevo')
-                    ->alignCenter()
-                    ->badge()
-                    ->color(fn($record) => $record->producto->stock_color),
+Tables\Columns\TextColumn::make('stock_nuevo')
+    ->label('Stock Nuevo')
+    ->alignCenter()
+    ->badge()
+    ->color(function($record) {
+        try {
+            if (!$record->producto) {
+                \Log::warning('[Kardex] stock_color: producto NULL', [
+                    'movimiento_id' => $record->id,
+                    'producto_id'   => $record->producto_id,
+                ]);
+                return 'gray';
+            }
+            return $record->producto->stock_color;
+        } catch (\Throwable $e) {
+            \Log::error('[Kardex] stock_color falló', [
+                'movimiento_id' => $record->id,
+                'producto_id'   => $record->producto_id,
+                'error'         => $e->getMessage(),
+            ]);
+            return 'gray';
+        }
+    }),
 
                 Tables\Columns\TextColumn::make('costo_total')
                     ->label('Valor')

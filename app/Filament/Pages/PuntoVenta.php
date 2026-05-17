@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Cliente;
+use App\Services\EmailJSService;
 use App\Models\MovimientoInventario;
 use App\Models\Producto;
 use App\Models\PedidoVenta;
@@ -46,12 +47,10 @@ class PuntoVenta extends Page
         return Cliente::where('estado', 'activo')->orderBy('nombre')->get();
     }
 
-    // Productos con búsqueda SOLO cuando hay texto (no todos al cargar)
     public function getProductosProperty()
     {
         $user = auth()->user();
         
-        // Si no hay término de búsqueda o es muy corto, NO mostrar nada
         if (empty($this->searchTerm) || strlen($this->searchTerm) < 2) {
             return collect();
         }
@@ -111,7 +110,6 @@ class PuntoVenta extends Page
     {
         $user = auth()->user();
         
-        // Obtener el inventario de la sucursal del usuario
         $inventario = InventarioAlmacen::where('producto_id', $productoId)
             ->where('almacen_id', $user->almacen_id)
             ->with(['producto'])
@@ -161,7 +159,7 @@ class PuntoVenta extends Page
         $this->guardarCarrito();
         $this->searchTerm = '';
         Notification::make()
-            ->title("✅ {$producto->nombre} agregado")
+            ->title("{$producto->nombre} agregado")
             ->success()
             ->send();
     }
@@ -231,10 +229,6 @@ class PuntoVenta extends Page
                 $impuesto = round($subtotal * 0.13, 2);
                 $total = round($subtotal + $impuesto, 2);
 
-                 $numero = DB::table('pedidos_venta')
-                    ->lockForUpdate()
-                    ->count(); 
-
                 $pedido = PedidoVenta::create([
                     'numero' => PedidoVenta::generarNumero(),
                     'cliente_id' => $this->cliente_id,
@@ -259,7 +253,6 @@ class PuntoVenta extends Page
                         'subtotal' => $item['subtotal'],
                     ]);
 
-                    // Actualizar stock en inventario_almacen (sucursal del usuario)
                     $user = auth()->user();
                     $inventario = InventarioAlmacen::where('producto_id', $item['id'])
                         ->where('almacen_id', $user->almacen_id)
@@ -289,6 +282,63 @@ class PuntoVenta extends Page
                     }
                 }
 
+                $cliente = Cliente::find($this->cliente_id);
+                
+                \Illuminate\Support\Facades\Log::info('Cliente encontrado:', [
+                    'id' => $this->cliente_id,
+                    'nombre' => $cliente->nombre ?? 'No encontrado',
+                    'email' => $cliente->email ?? 'Sin email'
+                ]);
+                
+                if ($cliente) {
+                    if ($cliente->email && filter_var($cliente->email, FILTER_VALIDATE_EMAIL)) {
+                        try {
+                            $emailService = new EmailJSService();
+                            
+                            $emailData = [
+                                'numero' => $pedido->numero,
+                                'fecha' => $pedido->fecha_pedido->format('d/m/Y H:i'),
+                                'cliente_nombre' => $cliente->nombre,
+                                'sucursal' => $this->sucursalActual?->nombre ?? 'No especificada',
+                                'items' => $this->items,
+                                'subtotal' => $subtotal,
+                                'impuesto' => $impuesto,
+                                'total' => $total,
+                                'metodo_pago' => 'Efectivo',
+                            ];
+                            
+                            $result = $emailService->sendReceipt($cliente->email, $cliente->nombre, $emailData);
+                            
+                            if ($result) {
+                                Notification::make()
+                                    ->title('Correo enviado')
+                                    ->body("Se envió el recibo a {$cliente->email}")
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Correo no enviado')
+                                    ->body("No se pudo enviar el recibo a {$cliente->email}")
+                                    ->warning()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Error al enviar correo: ' . $e->getMessage());
+                            Notification::make()
+                                ->title('Error al enviar correo')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    } else {
+                        Notification::make()
+                            ->title('Cliente sin email válido')
+                            ->body("El cliente {$cliente->nombre} no tiene un email válido registrado")
+                            ->warning()
+                            ->send();
+                    }
+                }
+
                 Notification::make()
                     ->title('Venta procesada')
                     ->body("N°: {$pedido->numero} · Total: $" . number_format($total, 2))
@@ -299,6 +349,7 @@ class PuntoVenta extends Page
                 $this->limpiarCarrito();
             });
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error al procesar venta: ' . $e->getMessage());
             Notification::make()
                 ->title('Error al procesar la venta')
                 ->body($e->getMessage())
@@ -306,4 +357,5 @@ class PuntoVenta extends Page
                 ->send();
         }
     }
+
 }
