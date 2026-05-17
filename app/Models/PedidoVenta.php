@@ -35,6 +35,15 @@ class PedidoVenta extends Model
         'total'              => 'decimal:2',
     ];
 
+    protected static function booted()
+    {
+        static::creating(function ($pedido) {
+            if (!$pedido->user_id) {
+                $pedido->user_id = auth()->id();
+            }
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()->logAll()->logOnlyDirty();
@@ -91,12 +100,26 @@ class PedidoVenta extends Model
         };
     }
 
+
     public static function generarNumero(): string
     {
         $anio = date('Y');
         $mes  = date('m');
-        $ultimo = static::whereYear('created_at', $anio)->whereMonth('created_at', $mes)->count();
-        return "OV-{$anio}{$mes}-" . str_pad($ultimo + 1, 4, '0', STR_PAD_LEFT);
+        $prefijo = "OV-{$anio}{$mes}-";
+        
+        $ultimo = static::withTrashed() 
+            ->where('numero', 'like', "{$prefijo}%")
+            ->orderByDesc('numero')
+            ->value('numero');
+        
+        if ($ultimo) {
+            $ultimoNum = (int) substr($ultimo, strlen($prefijo));
+            $siguiente = $ultimoNum + 1;
+        } else {
+            $siguiente = 1;
+        }
+        
+        return $prefijo . str_pad($siguiente, 4, '0', STR_PAD_LEFT);
     }
 }
 

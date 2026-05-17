@@ -231,6 +231,10 @@ class PuntoVenta extends Page
                 $impuesto = round($subtotal * 0.13, 2);
                 $total = round($subtotal + $impuesto, 2);
 
+                 $numero = DB::table('pedidos_venta')
+                    ->lockForUpdate()
+                    ->count(); 
+
                 $pedido = PedidoVenta::create([
                     'numero' => PedidoVenta::generarNumero(),
                     'cliente_id' => $this->cliente_id,
@@ -286,7 +290,7 @@ class PuntoVenta extends Page
                 }
 
                 Notification::make()
-                    ->title('✅ Venta procesada')
+                    ->title('Venta procesada')
                     ->body("N°: {$pedido->numero} · Total: $" . number_format($total, 2))
                     ->success()
                     ->persistent()

@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\PuntoVenta;
+use App\Filament\Pages\MisVentas;
 use App\Filament\Pages\InventarioSucursal;
 use App\Filament\Ventas\Pages\DashboardVentas;
 use App\Models\User;
@@ -50,12 +51,11 @@ class VentasPanelProvider extends PanelProvider
 
             ->pages([
                 PuntoVenta::class,       
-                InventarioSucursal::class
+                InventarioSucursal::class,
+                MisVentas::class,
             ])
 
             ->resources([
-                \App\Filament\Resources\PedidoVentaResource::class,
-                InventarioAlmacenResource::class,
             ])
 
             ->middleware([
