@@ -3,11 +3,12 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
-use App\Filament\Resources\{ClienteResource, EnvioResource, MovimientoInventarioResource};
+use App\Filament\Pages\Logistica\MapaTransportistas;
+use App\Filament\Resources\{ClienteResource, TrasladoResource ,InventarioAlmacenResource, UserResource , EnvioResource, MovimientoInventarioResource};
 use App\Filament\Resources\{PedidoCompraResource, PedidoVentaResource, ProductoResource};
 use App\Filament\Resources\{ProveedorResource, TransportistaResource};
 use App\Filament\Widgets\{EnviosActivosWidget, EstadisticasWidget, GraficoVentasWidget};
-use App\Filament\Widgets\{PedidosPendientesWidget, StockCriticoWidget};
+use App\Filament\Widgets\{PedidosPendientesWidget, StockCriticoWidget, AlertasInventario};
 use Filament\Http\Middleware\{Authenticate, DisableBladeIconComponents, DispatchServingFilamentEvent};
 use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
@@ -38,8 +39,10 @@ class AdminPanelProvider extends PanelProvider
                 'danger'  => Color::Rose,
             ])
             ->font('Inter')
-            ->brandName('TraceLog')
-            ->darkMode(true)
+            ->brandName('AgroAlvarado')
+            ->brandLogo(asset('images/logo.png')) 
+            ->brandLogoHeight('3.5rem')
+            ->darkMode(false)
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 NavigationGroup::make('Gestión de Socios')->icon('heroicon-o-users'),
@@ -48,16 +51,22 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Logística')->icon('heroicon-o-truck'),
                 NavigationGroup::make('Administración')->icon('heroicon-o-cog-6-tooth')->collapsed(),
             ])
-            ->pages([Dashboard::class])
+            ->pages([
+                Dashboard::class,
+                MapaTransportistas::class,
+            ])
             ->resources([
                 ProveedorResource::class,
                 ClienteResource::class,
                 ProductoResource::class,
                 MovimientoInventarioResource::class,
                 PedidoCompraResource::class,
+                UserResource::class,
                 PedidoVentaResource::class,
                 TransportistaResource::class,
                 EnvioResource::class,
+                InventarioAlmacenResource::class,
+                TrasladoResource::class,
             ])
             ->widgets([
                 EstadisticasWidget::class,
@@ -65,6 +74,7 @@ class AdminPanelProvider extends PanelProvider
                 PedidosPendientesWidget::class,
                 StockCriticoWidget::class,
                 EnviosActivosWidget::class,
+                AlertasInventario::class,
             ])
             ->middleware([
                 EncryptCookies::class,

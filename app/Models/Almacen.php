@@ -22,6 +22,10 @@ class Almacen extends Model
     {
         return $this->hasMany(MovimientoInventario::class);
     }
+    public function inventario()
+    {
+        return $this->hasMany(InventarioAlmacen::class);
+    }
 
     public function scopeActivo($query)
     {

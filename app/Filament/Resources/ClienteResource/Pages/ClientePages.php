@@ -1,7 +1,4 @@
 <?php
-// ════════════════════════════════════════════════════════
-// PAGES — ClienteResource
-// ════════════════════════════════════════════════════════
 namespace App\Filament\Resources\ClienteResource\Pages;
 
 use App\Filament\Resources\ClienteResource;

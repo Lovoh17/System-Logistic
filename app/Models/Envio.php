@@ -3,13 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Envio extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogsActivity;
 
     protected $table = 'envios';
 
@@ -39,7 +41,7 @@ class Envio extends Model
         'firma_receptor',
         'foto_entrega',
         'observaciones',
-        'motivo_fallo'
+        'motivo_fallo',
     ];
 
     protected $casts = [
@@ -47,17 +49,21 @@ class Envio extends Model
         'fecha_salida' => 'datetime',
         'fecha_entrega_estimada' => 'datetime',
         'fecha_entrega_real' => 'datetime',
-        'distancia_km' => 'decimal:2',
         'peso_total_kg' => 'decimal:3',
         'volumen_total_m3' => 'decimal:3',
+        'distancia_km' => 'decimal:2',
         'costo_envio' => 'decimal:2',
         'latitud_actual' => 'decimal:8',
         'longitud_actual' => 'decimal:8',
     ];
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll()->logOnlyDirty();
+    }
     public function pedidoVenta(): BelongsTo
     {
-        return $this->belongsTo(PedidoVenta::class, 'pedido_venta_id');
+        return $this->belongsTo(PedidoVenta::class);
     }
 
     public function transportista(): BelongsTo
@@ -73,5 +79,41 @@ class Envio extends Model
     public function seguimientos(): HasMany
     {
         return $this->hasMany(SeguimientoEnvio::class);
+    }
+
+    public function getEstadoColorAttribute(): string
+    {
+        return match($this->estado) {
+            'programado'     => 'gray',
+            'en_preparacion' => 'warning',
+            'despachado'     => 'info',
+            'en_transito'    => 'primary',
+            'en_destino'     => 'indigo',
+            'entregado'      => 'success',
+            'fallido'        => 'danger',
+            'devuelto'       => 'orange',
+            default          => 'gray',
+        };
+    }
+
+    public static function generarNumero(): string
+    {
+        $anio = date('Y');
+        $mes = date('m');
+        
+        $ultimo = static::whereYear('created_at', $anio)
+            ->whereMonth('created_at', $mes)
+            ->orderBy('id', 'desc')
+            ->first();
+        
+        if ($ultimo && $ultimo->numero) {
+            $partes = explode('-', $ultimo->numero);
+            $ultimoNumero = intval(end($partes));
+            $nuevoNumero = $ultimoNumero + 1;
+        } else {
+            $nuevoNumero = 1;
+        }
+        
+        return "ENV-{$anio}{$mes}-" . str_pad($nuevoNumero, 4, '0', STR_PAD_LEFT);
     }
 }

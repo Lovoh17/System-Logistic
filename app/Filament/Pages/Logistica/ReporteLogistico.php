@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace App\Filament\Pages\Logistica;
 
 use App\Models\Envio;
 use App\Models\PedidoVenta;
@@ -104,6 +104,6 @@ class ReporteLogistico extends Page implements HasForms
 
     public function getTitle(): string
     {
-        return '📊 Reportes Logísticos';
+        return 'Reportes Logísticos';
     }
 }

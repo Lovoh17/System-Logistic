@@ -27,7 +27,17 @@ class PedidoCompraResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
+        return $form->schema(self::getFormSchema());
+    }
+
+    public static function getFormSchema(): array
+    {
+        $productoId        = request()->query('producto_id');
+        $cantidadNecesaria = request()->query('cantidad_necesaria');
+        $proveedorId       = request()->query('proveedor_id');
+        $producto          = $productoId ? Producto::find($productoId) : null;
+
+        return [
             Forms\Components\Section::make('Encabezado de la Orden de Compra')
                 ->icon('heroicon-o-document-text')
                 ->columns(4)
@@ -42,6 +52,7 @@ class PedidoCompraResource extends Resource
                         ->label('Proveedor')
                         ->relationship('proveedor', 'nombre')
                         ->searchable()->preload()->required()
+                        ->default($proveedorId)
                         ->columnSpan(2),
 
                     Forms\Components\Select::make('estado')
@@ -62,7 +73,9 @@ class PedidoCompraResource extends Resource
 
                     Forms\Components\DatePicker::make('fecha_requerida')
                         ->label('Fecha de Entrega Requerida')
-                        ->minDate(now())->columnSpan(1),
+                        ->minDate(now())
+                        ->default(now()->addDays(7))
+                        ->columnSpan(1),
 
                     Forms\Components\DatePicker::make('fecha_recepcion')
                         ->label('Fecha Real de Recepción')
@@ -80,45 +93,70 @@ class PedidoCompraResource extends Resource
                         ->relationship()
                         ->label('')
                         ->columns(6)
+                        ->live()
+                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                            self::calcularTotales($get, $set);
+                        })
+                        ->defaultItems($producto ? 1 : 0)
+                        ->default($producto ? [[
+                            'producto_id'     => $producto->id,
+                            'cantidad'        => $cantidadNecesaria ?? $producto->stock_minimo,
+                            'precio_unitario' => $producto->precio_compra,
+                            'unidad_medida'   => $producto->unidad_medida,
+                            'subtotal'        => ($cantidadNecesaria ?? $producto->stock_minimo) * $producto->precio_compra,
+                        ]] : [])
                         ->schema([
                             Forms\Components\Select::make('producto_id')
                                 ->label('Producto')
                                 ->options(Producto::activo()->pluck('nombre', 'id'))
                                 ->searchable()->required()
-                                ->reactive()
-                                ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                    $producto = Producto::find($state);
-                                    if ($producto) {
-                                        $set('precio_unitario', $producto->precio_compra);
-                                        $set('unidad_medida',   $producto->unidad_medida);
+                                ->live()
+                                ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                                    $p = Producto::find($state);
+                                    if ($p) {
+                                        $set('precio_unitario', $p->precio_compra);
+                                        $set('unidad_medida',   $p->unidad_medida);
+                                        $set('subtotal', round(
+                                            ($get('cantidad') ?? 1) * $p->precio_compra, 2
+                                        ));
                                     }
+                                    self::calcularTotales($get, $set);
                                 })
                                 ->columnSpan(2),
 
                             Forms\Components\TextInput::make('cantidad')
                                 ->label('Cantidad')
                                 ->numeric()->default(1)->minValue(0.001)->step(0.001)
-                                ->required()->reactive()
-                                ->afterStateUpdated(fn($state, Forms\Get $get, Forms\Set $set) =>
-                                    $set('subtotal', round($state * $get('precio_unitario') * (1 - $get('descuento') / 100), 2))
-                                )
+                                ->required()->live(debounce: 500)
+                                ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
+                                    $set('subtotal', round(
+                                        floatval($state) * floatval($get('precio_unitario') ?? 0) * (1 - floatval($get('descuento') ?? 0) / 100), 2
+                                    ));
+                                    self::calcularTotales($get, $set);
+                                })
                                 ->columnSpan(1),
 
                             Forms\Components\TextInput::make('precio_unitario')
                                 ->label('Precio Unit.')
-                                ->numeric()->prefix('$')->required()->reactive()
-                                ->afterStateUpdated(fn($state, Forms\Get $get, Forms\Set $set) =>
-                                    $set('subtotal', round($get('cantidad') * $state * (1 - $get('descuento') / 100), 2))
-                                )
+                                ->numeric()->prefix('$')->required()->live(debounce: 500)
+                                ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
+                                    $set('subtotal', round(
+                                        floatval($get('cantidad') ?? 0) * floatval($state) * (1 - floatval($get('descuento') ?? 0) / 100), 2
+                                    ));
+                                    self::calcularTotales($get, $set);
+                                })
                                 ->columnSpan(1),
 
                             Forms\Components\TextInput::make('descuento')
                                 ->label('Desc. %')
                                 ->numeric()->default(0)->minValue(0)->maxValue(100)->suffix('%')
-                                ->reactive()
-                                ->afterStateUpdated(fn($state, Forms\Get $get, Forms\Set $set) =>
-                                    $set('subtotal', round($get('cantidad') * $get('precio_unitario') * (1 - $state / 100), 2))
-                                )
+                                ->live(debounce: 500)
+                                ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
+                                    $set('subtotal', round(
+                                        floatval($get('cantidad') ?? 0) * floatval($get('precio_unitario') ?? 0) * (1 - floatval($state) / 100), 2
+                                    ));
+                                    self::calcularTotales($get, $set);
+                                })
                                 ->columnSpan(1),
 
                             Forms\Components\TextInput::make('subtotal')
@@ -140,19 +178,32 @@ class PedidoCompraResource extends Resource
                 ->columns(4)
                 ->schema([
                     Forms\Components\TextInput::make('subtotal')
-                        ->numeric()->prefix('$')->default(0)->disabled()->dehydrated()->columnSpan(1),
+                        ->label('Subtotal')
+                        ->numeric()->prefix('$')->default(0)
+                        ->disabled()->dehydrated()->columnSpan(1),
 
                     Forms\Components\TextInput::make('impuesto')
                         ->label('IVA / Impuesto ($)')
-                        ->numeric()->prefix('$')->default(0)->columnSpan(1),
+                        ->numeric()->prefix('$')->default(0)
+                        ->live(debounce: 500)
+                        ->afterStateUpdated(fn(Forms\Get $get, Forms\Set $set) =>
+                            self::calcularTotales($get, $set)
+                        )
+                        ->columnSpan(1),
 
                     Forms\Components\TextInput::make('descuento')
                         ->label('Descuento Global ($)')
-                        ->numeric()->prefix('$')->default(0)->columnSpan(1),
+                        ->numeric()->prefix('$')->default(0)
+                        ->live(debounce: 500)
+                        ->afterStateUpdated(fn(Forms\Get $get, Forms\Set $set) =>
+                            self::calcularTotales($get, $set)
+                        )
+                        ->columnSpan(1),
 
                     Forms\Components\TextInput::make('total')
                         ->label('TOTAL')
-                        ->numeric()->prefix('$')->default(0)->disabled()->dehydrated()->columnSpan(1),
+                        ->numeric()->prefix('$')->default(0)
+                        ->disabled()->dehydrated()->columnSpan(1),
 
                     Forms\Components\Textarea::make('condiciones_pago')
                         ->label('Condiciones de Pago')
@@ -167,7 +218,30 @@ class PedidoCompraResource extends Resource
                         ->rows(2)->columnSpanFull()
                         ->visible(fn(Forms\Get $get) => $get('estado') === 'cancelado'),
                 ]),
+        ];
+    }
+
+    // ✅ Calcula subtotal y total general en tiempo real
+    protected static function calcularTotales(Forms\Get $get, Forms\Set $set): void
+    {
+        $items = $get('items') ?? [];
+
+        $subtotal = collect($items)
+            ->sum(fn($item) => floatval($item['subtotal'] ?? 0));
+
+        $impuesto  = floatval($get('impuesto')  ?? 0);
+        $descuento = floatval($get('descuento') ?? 0);
+        $total     = round($subtotal + $impuesto - $descuento, 2);
+
+        \Log::info('[OC] Totales recalculados', [
+            'subtotal'  => $subtotal,
+            'impuesto'  => $impuesto,
+            'descuento' => $descuento,
+            'total'     => $total,
         ]);
+
+        $set('subtotal', round($subtotal, 2));
+        $set('total',    $total);
     }
 
     public static function table(Table $table): Table
@@ -256,9 +330,7 @@ class PedidoCompraResource extends Resource
                     ->modalDescription('Se marcará como enviada y se notificará al proveedor.')
                     ->action(function ($record) {
                         $record->update(['estado' => 'enviado']);
-                        Notification::make()
-                            ->title('OC enviada al proveedor')
-                            ->success()->send();
+                        Notification::make()->title('OC enviada al proveedor')->success()->send();
                     }),
 
                 Tables\Actions\Action::make('confirmar_recepcion')
@@ -278,7 +350,6 @@ class PedidoCompraResource extends Resource
                             'estado'          => 'recibido',
                             'fecha_recepcion' => $data['fecha_recepcion'],
                         ]);
-                        // Aquí se actualizaría el stock (via Observer o Service)
                         Notification::make()
                             ->title('Recepción registrada')
                             ->body('El inventario ha sido actualizado.')

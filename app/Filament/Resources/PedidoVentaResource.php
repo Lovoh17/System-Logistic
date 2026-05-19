@@ -101,6 +101,15 @@ class PedidoVentaResource extends Resource
                         ])
                         ->default('directo')
                         ->columnSpan(1),
+
+                    Forms\Components\Select::make('almacen_id')
+                        ->label('Sucursal')
+                        ->relationship('almacen', 'nombre')
+                        ->searchable()
+                        ->preload()
+                        ->default(fn() => auth()->user()->almacen_id)
+                        ->disabled(fn() => auth()->user()->rol !== 'super-admin')
+                        ->columnSpan(1),
                 ]),
 
             Forms\Components\Section::make('Dirección de Entrega')
@@ -132,78 +141,93 @@ class PedidoVentaResource extends Resource
                 ->icon('heroicon-o-list-bullet')
                 ->schema([
                     Forms\Components\Repeater::make('items')
-                        ->relationship()
-                        ->label('')
-                        ->columns(6)
-                        ->schema([
-                            Forms\Components\Select::make('producto_id')
-                                ->label('Producto')
-                                ->options(Producto::activo()->pluck('nombre', 'id'))
-                                ->searchable()
-                                ->required()
-                                ->reactive()
-                                ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                    $producto = Producto::find($state);
-                                    if ($producto) {
-                                        $set('precio_unitario', $producto->precio_venta);
-                                        $set('unidad_medida', $producto->unidad_medida);
-                                    }
-                                })
-                                ->columnSpan(2),
+    ->relationship()
+    ->label('')
+    ->live()
+    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+        $subtotal = 0;
+        foreach ($state as $item) {
+            $subtotal += $item['subtotal'] ?? 0;
+        }
+        $set('subtotal', $subtotal);
+        $impuesto = round($subtotal * 0.13, 2);
+        $set('impuesto', $impuesto);
+        $costo_envio = (float)($get('costo_envio') ?? 0);
+        $set('total', round($subtotal + $impuesto + $costo_envio, 2));
+    })
+    ->columns(6)
+    ->schema([
+        Forms\Components\Select::make('producto_id')
+            ->label('Producto')
+            ->options(Producto::activo()->pluck('nombre', 'id'))
+            ->searchable()
+            ->required()
+            ->live()
+            ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                $producto = Producto::find($state);
+                if ($producto) {
+                    $set('precio_unitario', $producto->precio_venta);
+                    $set('unidad_medida', $producto->unidad_medida);
+                    // Calcular subtotal inmediatamente
+                    $cantidad = (float)($get('cantidad') ?? 1);
+                    $descuento = (float)($get('descuento') ?? 0);
+                    $set('subtotal', round($cantidad * $producto->precio_venta * (1 - $descuento / 100), 2));
+                }
+            })
+            ->columnSpan(2),
 
-                            Forms\Components\TextInput::make('cantidad')
-                                ->label('Cantidad')
-                                ->numeric()
-                                ->default(1)
-                                ->minValue(0.001)
-                                ->step(0.001)
-                                ->required()
-                                ->reactive()
-                                ->afterStateUpdated(fn ($state, Forms\Get $get, Forms\Set $set) =>
-                                    $set('subtotal', round($state * $get('precio_unitario') * (1 - $get('descuento') / 100), 2))
-                                )
-                                ->columnSpan(1),
+        Forms\Components\TextInput::make('cantidad')
+            ->label('Cantidad')
+            ->numeric()
+            ->default(1)
+            ->minValue(0.001)
+            ->step(0.001)
+            ->required()
+            ->live()
+            ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                $precio = (float)($get('precio_unitario') ?? 0);
+                $descuento = (float)($get('descuento') ?? 0);
+                $set('subtotal', round((float)$state * $precio * (1 - $descuento / 100), 2));
+            })
+            ->columnSpan(1),
 
-                            Forms\Components\TextInput::make('precio_unitario')
-                                ->label('Precio Unit.')
-                                ->numeric()
-                                ->prefix('$')
-                                ->required()
-                                ->reactive()
-                                ->afterStateUpdated(fn ($state, Forms\Get $get, Forms\Set $set) =>
-                                    $set('subtotal', round($get('cantidad') * $state * (1 - $get('descuento') / 100), 2))
-                                )
-                                ->columnSpan(1),
+        Forms\Components\TextInput::make('precio_unitario')
+            ->label('Precio Unit.')
+            ->numeric()
+            ->prefix('$')
+            ->required()
+            ->live()
+            ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                $cantidad = (float)($get('cantidad') ?? 1);
+                $descuento = (float)($get('descuento') ?? 0);
+                $set('subtotal', round($cantidad * (float)$state * (1 - $descuento / 100), 2));
+            })
+            ->columnSpan(1),
 
-                            Forms\Components\TextInput::make('descuento')
-                                ->label('Desc. %')
-                                ->numeric()
-                                ->default(0)
-                                ->minValue(0)
-                                ->maxValue(100)
-                                ->suffix('%')
-                                ->reactive()
-                                ->afterStateUpdated(fn ($state, Forms\Get $get, Forms\Set $set) =>
-                                    $set('subtotal', round($get('cantidad') * $get('precio_unitario') * (1 - $state / 100), 2))
-                                )
-                                ->columnSpan(1),
+        Forms\Components\TextInput::make('descuento')
+            ->label('Desc. %')
+            ->numeric()
+            ->default(0)
+            ->minValue(0)
+            ->maxValue(100)
+            ->suffix('%')
+            ->live()
+            ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                $cantidad = (float)($get('cantidad') ?? 1);
+                $precio = (float)($get('precio_unitario') ?? 0);
+                $set('subtotal', round($cantidad * $precio * (1 - (float)$state / 100), 2));
+            })
+            ->columnSpan(1),
 
-                            Forms\Components\TextInput::make('subtotal')
-                                ->label('Subtotal')
-                                ->numeric()
-                                ->prefix('$')
-                                ->disabled()
-                                ->dehydrated()
-                                ->columnSpan(1),
-                        ])
-                        ->addActionLabel('+ Agregar Producto')
-                        ->reorderable()
-                        ->collapsible()
-                        ->itemLabel(fn (array $state): ?string =>
-                            isset($state['producto_id'])
-                                ? (Producto::find($state['producto_id'])?->nombre ?? 'Producto')
-                                : null
-                        ),
+        Forms\Components\TextInput::make('subtotal')
+            ->label('Subtotal')
+            ->numeric()
+            ->prefix('$')
+            ->disabled()
+            ->dehydrated() 
+            ->default(0)
+            ->columnSpan(1),
+    ])
                 ]),
 
             Forms\Components\Section::make('Totales')
@@ -224,14 +248,23 @@ class PedidoVentaResource extends Resource
                         ->numeric()
                         ->prefix('$')
                         ->default(0)
+                        ->disabled()
+                        ->dehydrated()
                         ->columnSpan(1),
 
                     Forms\Components\TextInput::make('costo_envio')
-                        ->label('Costo de Envío')
-                        ->numeric()
-                        ->prefix('$')
-                        ->default(0)
-                        ->columnSpan(1),
+    ->label('Costo de Envío')
+    ->numeric()
+    ->prefix('$')
+    ->default(0)
+    ->live()
+    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+        $subtotal = $get('subtotal') ?? 0;
+        $impuesto = $subtotal * 0.13;
+        $total = $subtotal + $impuesto + ($state ?? 0);
+        $set('total', $total);
+    })
+    ->columnSpan(1),
 
                     Forms\Components\TextInput::make('total')
                         ->label('TOTAL')
@@ -247,7 +280,7 @@ class PedidoVentaResource extends Resource
                         ->rows(3)
                         ->columnSpanFull(),
                 ]),
-        ]);
+        ]); 
     }
 
     public static function table(Table $table): Table
@@ -284,6 +317,14 @@ class PedidoVentaResource extends Resource
                         'warning' => 'alta',
                         'danger'  => 'urgente',
                     ]),
+
+                Tables\Columns\TextColumn::make('almacen.nombre')
+                    ->label('Sucursal')
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(),
 
                 Tables\Columns\BadgeColumn::make('estado')
                     ->colors([
@@ -328,6 +369,11 @@ class PedidoVentaResource extends Resource
                         'alta'    => 'Alta',
                         'urgente' => 'Urgente',
                     ]),
+                
+                Tables\Filters\SelectFilter::make('almacen_id')
+                    ->label('Sucursal')
+                    ->relationship('almacen', 'nombre')
+                    ->multiple(),
 
                 Tables\Filters\Filter::make('fecha_pedido')
                     ->form([

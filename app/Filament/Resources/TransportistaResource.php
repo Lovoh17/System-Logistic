@@ -42,10 +42,10 @@ class TransportistaResource extends Resource
 
                     Forms\Components\Select::make('estado')
                         ->options([
-                            'disponible'    => '✅ Disponible',
-                            'en_ruta'       => '🚛 En Ruta',
-                            'mantenimiento' => '🔧 Mantenimiento',
-                            'inactivo'      => '❌ Inactivo',
+                            'disponible'    => 'Disponible',
+                            'en_ruta'       => 'En Ruta',
+                            'mantenimiento' => 'Mantenimiento',
+                            'inactivo'      => 'Inactivo',
                         ])
                         ->default('disponible')->required()->columnSpan(1),
 
@@ -158,35 +158,4 @@ class TransportistaResource extends Resource
     }
 }
 
-// ─── Pages ───────────────────────────────────────────────────────
 
-namespace App\Filament\Resources\TransportistaResource\Pages;
-
-use App\Filament\Resources\TransportistaResource;
-use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
-use Filament\Resources\Pages\CreateRecord;
-use Filament\Resources\Pages\EditRecord;
-
-class ListTransportistas extends ListRecords
-{
-    protected static string $resource = TransportistaResource::class;
-    protected function getHeaderActions(): array
-    {
-        return [Actions\CreateAction::make()];
-    }
-}
-
-class CreateTransportista extends CreateRecord
-{
-    protected static string $resource = TransportistaResource::class;
-}
-
-class EditTransportista extends EditRecord
-{
-    protected static string $resource = TransportistaResource::class;
-    protected function getHeaderActions(): array
-    {
-        return [Actions\DeleteAction::make()];
-    }
-}

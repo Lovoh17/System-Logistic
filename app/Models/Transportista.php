@@ -20,7 +20,7 @@ class Transportista extends Model
         'email', 'telefono',
         'tiene_refrigeracion', 'tiene_gps',
         'tarifa_km', 'tarifa_fija',
-        'estado', 'notas',
+        'estado', 'notas','ubicacion_actual', 'ultima_ubicacion_at','latitud', 'longitud',
     ];
 
     protected $casts = [

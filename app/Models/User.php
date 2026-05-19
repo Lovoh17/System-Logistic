@@ -7,15 +7,17 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;  // ← agregar este use
 
 class User extends Authenticatable implements FilamentUser
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles; 
 
     protected $fillable = [
         'name',
         'email',
         'password',
+        'rol', 
     ];
 
     protected $hidden = [
@@ -39,4 +41,29 @@ class User extends Authenticatable implements FilamentUser
     {
         return true;
     }
+
+    public static function getHomeUrl(): string
+{
+    $user = auth()->user();
+    
+    if (!$user) {
+        return '/login';
+    }
+    
+    if ($user->hasRole('super-admin') || $user->hasRole('admin-sucursal')) {
+        return '/admin';
+    }
+    
+    if ($user->hasRole('cajero')) {
+        return '/ventas';
+    }
+    
+    if ($user->hasRole('logistica') || $user->hasRole('supervisor-bodega')) {
+        return '/admin';
+    }
+    
+    return '/admin'; // Por defecto
+}
+
+    
 }
