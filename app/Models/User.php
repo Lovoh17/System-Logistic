@@ -57,11 +57,15 @@ class User extends Authenticatable implements FilamentUser
     if ($user->hasRole('cajero')) {
         return '/ventas';
     }
-    
+
+    if ($user->hasRole('contador')) {
+        return '/contador';
+    }
+
     if ($user->hasRole('logistica') || $user->hasRole('supervisor-bodega')) {
         return '/admin';
     }
-    
+
     return '/admin'; // Por defecto
 }
 
