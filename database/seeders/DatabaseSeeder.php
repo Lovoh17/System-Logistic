@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             'cajero'            => 'Cajero — alta/consulta de pedidos de venta',
             'supervisor_bodega' => 'Supervisor de bodega — gestión de inventario y traslados',
             'logistica'         => 'Logística — gestión de envíos y transportistas',
+            'contador'          => 'Contador — reportes financieros y estado de resultados',
         ];
 
         $rolesCreados = [];
@@ -89,6 +90,14 @@ class DatabaseSeeder extends Seeder
             'inventario.ver',
             'ventas.ver',
             'envios.ver', 'envios.crear', 'envios.despachar', 'envios.gestionar',
+            'reportes.ver', 'reportes.exportar',
+        ]);
+
+        $rolesCreados['contador']->syncPermissions([
+            'productos.ver',
+            'inventario.ver',
+            'compras.ver',
+            'ventas.ver',
             'reportes.ver', 'reportes.exportar',
         ]);
 
@@ -187,6 +196,17 @@ class DatabaseSeeder extends Seeder
             ]
         );
         $logistica->assignRole('logistica');
+
+        $contador = User::updateOrCreate(
+            ['email' => 'contador@tracelog.com'],
+            [
+                'name' => 'Contador General',
+                'password' => Hash::make('password'),
+                'almacen_id' => null,
+                'email_verified_at' => now(),
+            ]
+        );
+        $contador->assignRole('contador');
 
         // ═══════════════════════════════════════════════════════════════════
         // 4. CATEGORÍAS
@@ -640,6 +660,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info('═══════════════════════════════════════════════════════════');
         $this->command->info('superadmin@tracelog.com     → Rol: super_admin');
         $this->command->info('logistica@tracelog.com      → Rol: logistica');
+        $this->command->info('contador@tracelog.com       → Rol: contador');
         $this->command->info('');
 
         foreach ($sucursalMap as $code => $info) {
