@@ -8,27 +8,9 @@
     resultadosBusqueda: @entangle('productosBusqueda'),
     clientes: @entangle('clientes'),
     productosRapidos: @entangle('productosRapidos'),
-    mostrarTicket: false,
-    ticketHtml: '',
 }" x-on:carrito-actualizado.window="carrito = $wire.carrito; total = $wire.total"
-  x-on:open-ticket-modal.window="mostrarTicket = true; ticketHtml = $event.detail.html"
   class="space-y-4">
-    
-    <!-- Modal del ticket -->
-    <div x-show="mostrarTicket" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
-            <div x-html="ticketHtml"></div>
-            <div class="p-4 border-t flex gap-2">
-                <button @click="window.print()" class="flex-1 bg-green-700 text-white py-2 rounded-lg hover:bg-green-800">
-                    🖨️ Imprimir
-                </button>
-                <button @click="mostrarTicket = false" class="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600">
-                    Cerrar
-                </button>
-            </div>
-        </div>
-    </div>
-    
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Panel izquierdo: Productos -->
         <div class="lg:col-span-2 bg-white rounded-lg shadow p-4">
