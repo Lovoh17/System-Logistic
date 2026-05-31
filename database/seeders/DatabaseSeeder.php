@@ -15,6 +15,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Database\Seeders\PlanCuentasSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -676,6 +677,13 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Clientes creados       : ' . count($clientesData));
         $this->command->info('Transportistas creados : ' . count($transportistasData));
         $this->command->info('Registros inventario   : ' . (count($productos) * count($almacenes)));
+        $this->command->info('');
+
+        // ═══════════════════════════════════════════════════════════════════
+        // 10. PLAN DE CUENTAS CONTABLES
+        // ═══════════════════════════════════════════════════════════════════
+        $this->call(PlanCuentasSeeder::class);
+        $this->command->info('Plan de cuentas contables sembrado.');
         $this->command->info('');
     }
 }
