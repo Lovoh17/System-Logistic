@@ -28,8 +28,16 @@ class RoleBasedAccess
                 case 'cajero':
                     // Cajero no puede acceder al panel de administración
                     if ($request->path() === 'admin' || str_starts_with($request->path(), 'admin/')) {
-                        return redirect()->route('ventas.dashboard')
+                        return redirect('/ventas')
                             ->with('warning', 'Acceso denegado. No tienes permisos de administrador.');
+                    }
+                    break;
+
+                case 'contador':
+                    // Contador solo puede acceder a su panel
+                    if ($request->path() === 'admin' || str_starts_with($request->path(), 'admin/')) {
+                        return redirect('/contador')
+                            ->with('info', 'Redirigido al panel de contabilidad.');
                     }
                     break;
                     

@@ -44,6 +44,7 @@ return [
         App\Providers\Filament\AdminPanelProvider::class,
         App\Providers\Filament\VentasPanelProvider::class,
         App\Providers\Filament\LogisticaPanelProvider::class,
+        App\Providers\Filament\ContadorPanelProvider::class,
     ],
 
     'aliases' => Illuminate\Foundation\AliasLoader::getInstance()->getAliases(),
