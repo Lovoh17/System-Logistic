@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Traslado extends Model
 {
@@ -67,6 +68,11 @@ class Traslado extends Model
     public function asignadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'asignado_por');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(TrasladoItem::class);
     }
 
     // Generar número de traslado

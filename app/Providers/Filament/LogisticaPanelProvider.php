@@ -35,6 +35,10 @@ class LogisticaPanelProvider extends PanelProvider
                 'Envíos',
                 'Reportes',
             ])
+            ->pages([
+                \App\Filament\Pages\Logistica\DashboardLogistica::class,
+                \App\Filament\Pages\Logistica\RedistribucionSucursales::class,
+            ])
             ->resources([
                 \App\Filament\Resources\PedidoCompraResource::class,
                 \App\Filament\Resources\PedidoVentaResource::class,
