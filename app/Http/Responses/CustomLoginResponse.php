@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Http\Middleware\Responses;
+namespace App\Http\Responses;
 
 use Filament\Http\Responses\Auth\Contracts\LoginResponse as LoginResponseContract;
 use Illuminate\Http\RedirectResponse;
 
-// Renombrado para evitar conflicto con la implementación principal en App\Http\Responses
-class MiddlewareCustomLoginResponse implements LoginResponseContract
+class CustomLoginResponse implements LoginResponseContract
 {
     public function toResponse($request): RedirectResponse
     {
@@ -61,3 +60,4 @@ class MiddlewareCustomLoginResponse implements LoginResponseContract
             ->withErrors(['email' => $mensaje]);
     }
 }
+

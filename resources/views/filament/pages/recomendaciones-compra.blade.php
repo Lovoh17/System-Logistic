@@ -96,19 +96,47 @@
                                     {{ $proveedor }}
                                 </h3>
                                 <span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400
-                                             text-xs font-medium px-2 py-0.5 rounded-full">
-                                    {{ $items->count() }} producto(s)
-                                </span>
+                     text-xs font-medium px-2 py-0.5 rounded-full">
+            {{ $items->count() }} producto(s)
+        </span>
+                                @if($items->first()['proveedor_en_oc'])
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
+                         font-semibold bg-warning-100 text-warning-700
+                         dark:bg-warning-900/30 dark:text-warning-400">
+                <x-heroicon-m-exclamation-triangle class="w-3 h-3"/>
+                OC pendiente: {{ implode(', ', $items->first()['oc_proveedor_nums']) }}
+            </span>
+                                @endif
                             </div>
-                            <x-filament::button
-                                    wire:click="crearOCPorProveedor('{{ $proveedor }}')"
-                                    wire:loading.attr="disabled"
-                                    icon="heroicon-m-shopping-cart"
-                                    color="primary"
-                                    size="sm"
-                            >
-                                Crear OC para {{ $proveedor }}
-                            </x-filament::button>
+
+                            @php
+                                $todosEnOC = $items->every(fn($i) => $i['en_oc']);
+                                $algunoEnOC = $items->some(fn($i) => $i['en_oc']);
+                            @endphp
+
+                            @if($todosEnOC)
+                                {{-- Todos los productos ya están en OC --}}
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm
+                     bg-warning-100 text-warning-700 dark:bg-warning-900/30
+                     dark:text-warning-400 rounded-lg font-medium">
+            <x-heroicon-m-clock class="w-4 h-4"/>
+            Todos en OC pendiente
+        </span>
+                            @else
+                                <x-filament::button
+                                        wire:click="crearOCPorProveedor('{{ $proveedor }}')"
+                                        wire:loading.attr="disabled"
+                                        icon="heroicon-m-shopping-cart"
+                                        color="primary"
+                                        size="sm"
+                                >
+                                    @if($algunoEnOC)
+                                        Crear OC (productos sin OC)
+                                    @else
+                                        Crear OC para {{ $proveedor }}
+                                    @endif
+                                </x-filament::button>
+                            @endif
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
@@ -126,22 +154,31 @@
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                                 @foreach($items as $recomendacion)
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition
+               {{ $recomendacion['en_oc'] ? 'opacity-60' : '' }}">
                                         <td class="py-3 px-3 font-medium text-gray-800 dark:text-gray-200">
-                                            {{ $recomendacion['producto'] }}
+                                            <div class="flex items-center gap-2">
+                                                {{ $recomendacion['producto'] }}
+                                                @if($recomendacion['en_oc'])
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
+                                 font-semibold bg-warning-100 text-warning-700
+                                 dark:bg-warning-900/30 dark:text-warning-400">
+                        <x-heroicon-m-clock class="w-3 h-3"/>
+                        En {{ implode(', ', $recomendacion['oc_numeros']) }}
+                    </span>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td class="py-3 px-3 text-right">
-                                                <span @class([
-                                                    'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold',
-                                                    'bg-danger-100 text-danger-700 dark:bg-danger-900/30 dark:text-danger-400'
-                                                        => $recomendacion['stock_actual'] <= 0,
-                                                    'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400'
-                                                        => $recomendacion['stock_actual'] > 0 && $recomendacion['stock_actual'] <= $recomendacion['stock_minimo'],
-                                                    'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400'
-                                                        => $recomendacion['stock_actual'] > $recomendacion['stock_minimo'],
-                                                ])>
-                                                    {{ number_format($recomendacion['stock_actual'], 2) }}
-                                                </span>
+            <span @class([
+                'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold',
+                'bg-danger-100 text-danger-700 dark:bg-danger-900/30 dark:text-danger-400'
+                    => $recomendacion['stock_actual'] <= 0,
+                'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400'
+                    => $recomendacion['stock_actual'] > 0,
+            ])>
+                {{ number_format($recomendacion['stock_actual'], 2) }}
+            </span>
                                         </td>
                                         <td class="py-3 px-3 text-right text-gray-600 dark:text-gray-400">
                                             {{ number_format($recomendacion['stock_minimo'], 2) }}
@@ -159,16 +196,26 @@
                                             ${{ number_format($recomendacion['cant_sugerida'] * $recomendacion['precio'], 2) }}
                                         </td>
                                         <td class="py-3 px-3 text-center">
-                                            <button
-                                                    wire:click="crearOCProducto({{ $recomendacion['producto_id'] }}, {{ $recomendacion['cant_sugerida'] }}, '{{ $recomendacion['proveedor_id'] }}')"
-                                                    wire:loading.attr="disabled"
-                                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs
-                                                           bg-primary-600 hover:bg-primary-700 text-white rounded-lg
-                                                           font-medium transition disabled:opacity-50"
-                                            >
-                                                <x-heroicon-m-plus class="w-3 h-3"/>
-                                                Agregar a OC
-                                            </button>
+                                            @if($recomendacion['en_oc'])
+                                                {{-- Ya está en OC pendiente --}}
+                                                <span class="inline-flex items-center gap-1 px-3 py-1.5 text-xs
+                             bg-warning-100 text-warning-700 dark:bg-warning-900/30
+                             dark:text-warning-400 rounded-lg font-medium">
+                    <x-heroicon-m-clock class="w-3 h-3"/>
+                    Pendiente recepción
+                </span>
+                                            @else
+                                                <button
+                                                        wire:click="crearOCProducto({{ $recomendacion['producto_id'] }}, {{ $recomendacion['cant_sugerida'] }}, '{{ $recomendacion['proveedor_id'] }}')"
+                                                        wire:loading.attr="disabled"
+                                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs
+                           bg-primary-600 hover:bg-primary-700 text-white rounded-lg
+                           font-medium transition disabled:opacity-50"
+                                                >
+                                                    <x-heroicon-m-plus class="w-3 h-3"/>
+                                                    Agregar a OC
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach

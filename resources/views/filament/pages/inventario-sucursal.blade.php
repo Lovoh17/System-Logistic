@@ -1,40 +1,116 @@
 <x-filament-panels::page>
-    <!-- Cabecera con resumen -->
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div class="bg-primary-50 rounded-lg p-4 text-center">
-            <div class="text-2xl font-bold text-primary-700">{{ $this->resumen['total_productos'] }}</div>
-            <div class="text-sm text-gray-600">Total Productos</div>
-        </div>
-        <div class="bg-danger-50 rounded-lg p-4 text-center">
-            <div class="text-2xl font-bold text-danger-700">{{ $this->resumen['sin_stock'] }}</div>
-            <div class="text-sm text-gray-600">Sin Stock</div>
-        </div>
-        <div class="bg-warning-50 rounded-lg p-4 text-center">
-            <div class="text-2xl font-bold text-warning-700">{{ $this->resumen['stock_bajo'] }}</div>
-            <div class="text-sm text-gray-600">Stock Bajo</div>
-        </div>
-        <div class="bg-info-50 rounded-lg p-4 text-center">
-            <div class="text-2xl font-bold text-info-700">{{ $this->resumen['stock_alto'] }}</div>
-            <div class="text-sm text-gray-600">Stock Alto</div>
-        </div>
-        <div class="bg-success-50 rounded-lg p-4 text-center">
-            <div class="text-2xl font-bold text-success-700">${{ number_format($this->resumen['valor_inventario'], 2) }}</div>
-            <div class="text-sm text-gray-600">Valor Inventario</div>
-        </div>
-    </div>
+    <div class="space-y-4">
 
-    <!-- Información de la sucursal -->
-    <div class="bg-gray-100 rounded-lg p-4 mb-6 flex justify-between items-center">
-        <div class="flex items-center gap-2">
-            <x-heroicon-o-building-storefront class="w-5 h-5 text-gray-600" />
-            <span class="font-semibold">Sucursal:</span>
-            <span class="text-gray-700">{{ $this->sucursalActual?->nombre ?? 'No asignada' }}</span>
-        </div>
-        <div class="text-sm text-gray-500">
-            Última actualización: {{ now()->format('d/m/Y H:i') }}
-        </div>
-    </div>
+        <div class="flex gap-4">
 
-    <!-- Tabla de inventario -->
-    {{ $this->table }}
+            <div class="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-5 h-24">
+                <div class="flex items-center justify-between h-full">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            Total Productos
+                        </p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-0.5">
+                            {{ $this->resumen['total_productos'] }}
+                        </p>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-primary-100 dark:bg-primary-900/30">
+                        <x-heroicon-m-cube class="w-6 h-6 text-primary-600 dark:text-primary-400"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-5 h-24">
+                <div class="flex items-center justify-between h-full">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            Sin Stock
+                        </p>
+                        <p class="text-2xl font-bold mt-0.5 {{ $this->resumen['sin_stock'] > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400 dark:text-gray-500' }}">
+                            {{ $this->resumen['sin_stock'] }}
+                        </p>
+                    </div>
+                    <div class="p-2.5 rounded-xl {{ $this->resumen['sin_stock'] > 0 ? 'bg-danger-100 dark:bg-danger-900/30' : 'bg-gray-100 dark:bg-gray-700' }}">
+                        <x-heroicon-m-exclamation-circle class="w-6 h-6 {{ $this->resumen['sin_stock'] > 0 ? 'text-danger-600 dark:text-danger-400' : 'text-gray-400 dark:text-gray-500' }}"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-5 h-24">
+                <div class="flex items-center justify-between h-full">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            Stock Bajo
+                        </p>
+                        <p class="text-2xl font-bold mt-0.5 {{ $this->resumen['stock_bajo'] > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400 dark:text-gray-500' }}">
+                            {{ $this->resumen['stock_bajo'] }}
+                        </p>
+                    </div>
+                    <div class="p-2.5 rounded-xl {{ $this->resumen['stock_bajo'] > 0 ? 'bg-warning-100 dark:bg-warning-900/30' : 'bg-gray-100 dark:bg-gray-700' }}">
+                        <x-heroicon-m-exclamation-triangle class="w-6 h-6 {{ $this->resumen['stock_bajo'] > 0 ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400 dark:text-gray-500' }}"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-5 h-24">
+                <div class="flex items-center justify-between h-full">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            Stock Alto
+                        </p>
+                        <p class="text-2xl font-bold text-info-600 dark:text-info-400 mt-0.5">
+                            {{ $this->resumen['stock_alto'] }}
+                        </p>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-info-100 dark:bg-info-900/30">
+                        <x-heroicon-m-arrow-trending-up class="w-6 h-6 text-info-600 dark:text-info-400"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-5 h-24">
+                <div class="flex items-center justify-between h-full">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            Valor Inventario
+                        </p>
+                        <p class="text-2xl font-bold text-success-600 dark:text-success-400 mt-0.5">
+                            ${{ number_format($this->resumen['valor_inventario'], 2) }}
+                        </p>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-success-100 dark:bg-success-900/30">
+                        <x-heroicon-m-currency-dollar class="w-6 h-6 text-success-600 dark:text-success-400"/>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <x-filament::section>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="p-1.5 rounded-lg bg-primary-100 dark:bg-primary-900/30">
+                        <x-heroicon-m-building-storefront class="w-4 h-4 text-primary-600 dark:text-primary-400"/>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {{ $this->sucursalActual?->nombre ?? 'Sin sucursal asignada' }}
+                    </span>
+                </div>
+                <p class="text-xs text-gray-400 dark:text-gray-500">
+                    Actualizado: {{ now()->format('d/m/Y H:i') }}
+                </p>
+            </div>
+        </x-filament::section>
+
+        <x-filament::section>
+            <x-slot name="heading">
+                <span class="flex items-center gap-2">
+                    <x-heroicon-m-table-cells class="w-4 h-4 text-gray-400"/>
+                    Inventario
+                </span>
+            </x-slot>
+
+            {{ $this->table }}
+        </x-filament::section>
+
+    </div>
 </x-filament-panels::page>

@@ -336,6 +336,23 @@ class PedidoCompraResource extends Resource
                         'danger'  => 'cancelado',
                     ]),
 
+                Tables\Columns\TextColumn::make('recepcion_progreso')
+                    ->label('Recibido')
+                    ->state(fn($record) =>
+                        $record->items->sum('cantidad') > 0
+                            ? number_format($record->items->sum('cantidad_recibida'), 0)
+                              . ' / '
+                              . number_format($record->items->sum('cantidad'), 0) . ' u.'
+                            : '—'
+                    )
+                    ->badge()
+                    ->color(fn($state, $record) => match($record->estado) {
+                        'recibido' => 'success',
+                        'parcial'  => 'warning',
+                        default    => 'gray',
+                    })
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('total')
                     ->label('Total')
                     ->money('USD')->sortable()->alignRight(),
@@ -397,179 +414,25 @@ class PedidoCompraResource extends Resource
                         Notification::make()->title('OC enviada al proveedor')->success()->send();
                     }),
 
+                Tables\Actions\Action::make('confirmar_oc')
+                    ->label('Confirmar')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('primary')
+                    ->visible(fn($record) => in_array($record->estado, ['borrador', 'enviado']))
+                    ->requiresConfirmation()
+                    ->modalHeading('Confirmar Orden de Compra')
+                    ->modalDescription('¿El proveedor confirmó la orden? Se marcará como Confirmada y quedará lista para recepción.')
+                    ->action(function ($record) {
+                        $record->update(['estado' => 'confirmado']);
+                        Notification::make()->success()->title('OC confirmada por el proveedor')->send();
+                    }),
+
                 Tables\Actions\Action::make('confirmar_recepcion')
                     ->label('Recibir')
                     ->icon('heroicon-o-inbox-arrow-down')
                     ->color('success')
                     ->visible(fn($record) => in_array($record->estado, ['enviado', 'confirmado', 'parcial']))
-                    ->modalHeading('Registrar Recepción de Mercadería')
-                    ->modalWidth('2xl')
-                    ->form([
-                        Forms\Components\Grid::make(2)->schema([
-                            Forms\Components\DatePicker::make('fecha_recepcion')
-                                ->label('Fecha de Recepción')
-                                ->default(today())
-                                ->required(),
-
-                            Forms\Components\Select::make('almacen_id')
-                                ->label('Almacén de Destino')
-                                ->options(fn() => Almacen::activo()->pluck('nombre', 'id'))
-                                ->required(),
-
-                            Forms\Components\TextInput::make('lote')
-                                ->label('Número de Lote (opcional)')
-                                ->placeholder('Ej: LOT-2026-001')
-                                ->maxLength(50),
-
-                            Forms\Components\DatePicker::make('fecha_vencimiento')
-                                ->label('Fecha de Vencimiento (opcional)')
-                                ->minDate(today()),
-                        ]),
-
-                        Forms\Components\Section::make('Cantidades a Recibir por Producto')
-                            ->schema([
-                                Forms\Components\Repeater::make('items_recepcion')
-                                    ->label('')
-                                    ->addable(false)
-                                    ->deletable(false)
-                                    ->reorderable(false)
-                                    ->columns(4)
-                                    ->schema([
-                                        Forms\Components\Hidden::make('item_id'),
-
-                                        Forms\Components\TextInput::make('producto_nombre')
-                                            ->label('Producto')
-                                            ->disabled()
-                                            ->dehydrated(false)
-                                            ->columnSpan(2),
-
-                                        Forms\Components\TextInput::make('cantidad_pendiente_display')
-                                            ->label('Pendiente')
-                                            ->disabled()
-                                            ->dehydrated(false),
-
-                                        Forms\Components\TextInput::make('cantidad_a_recibir')
-                                            ->label('A Recibir')
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->required(),
-                                    ]),
-                            ]),
-
-                        Forms\Components\Textarea::make('notas')
-                            ->label('Notas de Recepción')
-                            ->rows(2),
-                    ])
-                    ->fillForm(fn($record) => [
-                        'fecha_recepcion' => today()->format('Y-m-d'),
-                        'almacen_id'      => Almacen::where('es_principal', true)->value('id')
-                            ?? Almacen::activo()->value('id')
-                                ?? 1,
-                        'items_recepcion' => $record->items->map(fn($item) => [
-                            'item_id'                   => $item->id,
-                            'producto_nombre'            => $item->producto->nombre ?? 'Producto',
-                            'cantidad_pendiente_display' => number_format($item->cantidad_pendiente, 3, '.', ''),
-                            'cantidad_a_recibir'         => $item->cantidad_pendiente,
-                        ])->toArray(),
-                    ])
-                    ->action(function ($record, array $data) {
-                        // Validar que fecha_recepcion >= fecha_pedido
-                        if ($record->fecha_pedido && $data['fecha_recepcion'] < $record->fecha_pedido->format('Y-m-d')) {
-                            Notification::make()->danger()
-                                ->title('Fecha inválida')
-                                ->body('La fecha de recepción no puede ser anterior a la fecha del pedido.')
-                                ->send();
-                            return;
-                        }
-
-                        $userId      = auth()->id() ?? 1;
-                        $almacenId   = $data['almacen_id'];
-                        $lote        = $data['lote'] ?? null;
-                        $vencimiento = $data['fecha_vencimiento'] ?? null;
-                        $todoRecibido = true;
-                        $alertasStock = [];
-
-                        foreach ($data['items_recepcion'] as $itemData) {
-                            $item = PedidoCompraItem::find($itemData['item_id']);
-                            if (!$item) continue;
-
-                            $cantARecibir = floatval($itemData['cantidad_a_recibir']);
-                            $pendiente    = floatval($item->cantidad_pendiente);
-
-                            // No permitir recibir más de lo pendiente
-                            $cantARecibir = min($cantARecibir, $pendiente);
-
-                            if ($cantARecibir <= 0) {
-                                if ($pendiente > 0) $todoRecibido = false;
-                                continue;
-                            }
-
-                            // Actualizar cantidad_recibida del ítem
-                            $item->update([
-                                'cantidad_recibida' => floatval($item->cantidad_recibida) + $cantARecibir,
-                            ]);
-
-                            if (floatval($item->cantidad_recibida) < floatval($item->cantidad)) {
-                                $todoRecibido = false;
-                            }
-
-                            // Actualizar inventario
-                            $inventario = InventarioAlmacen::firstOrCreate(
-                                ['producto_id' => $item->producto_id, 'almacen_id' => $almacenId],
-                                ['stock_actual' => 0, 'stock_minimo' => 0, 'stock_maximo' => 9999, 'punto_reorden' => 0]
-                            );
-                            $stockAnterior = floatval($inventario->stock_actual);
-                            $stockNuevo    = $stockAnterior + $cantARecibir;
-                            $inventario->update(['stock_actual' => $stockNuevo]);
-
-                            // Registrar movimiento de inventario
-                            MovimientoInventario::create([
-                                'numero'           => MovimientoInventario::generarNumero(),
-                                'producto_id'      => $item->producto_id,
-                                'almacen_id'       => $almacenId,
-                                'user_id'          => $userId,
-                                'tipo'             => 'entrada_compra',
-                                'cantidad'         => max(1, (int) round($cantARecibir)),
-                                'stock_anterior'   => $stockAnterior,
-                                'stock_nuevo'      => $stockNuevo,
-                                'costo_unitario'   => $item->precio_unitario,
-                                'costo_total'      => round(floatval($item->precio_unitario) * $cantARecibir, 2),
-                                'lote'             => $lote,
-                                'fecha_vencimiento'=> $vencimiento,
-                                'referencia_type'  => PedidoCompra::class,
-                                'referencia_id'    => $record->id,
-                                'fecha_movimiento' => now(),
-                                'motivo'           => "Recepción de OC {$record->numero}",
-                            ]);
-
-                            // Verificar stock mínimo
-                            $stockMin = floatval($inventario->fresh()->stock_minimo);
-                            if ($stockMin > 0 && $stockNuevo <= $stockMin) {
-                                $alertasStock[] = ($item->producto->nombre ?? 'Producto')
-                                    . " — stock: {$stockNuevo}, mín: {$stockMin}";
-                            }
-                        }
-
-                        // Actualizar estado de la orden
-                        $record->update([
-                            'estado'          => $todoRecibido ? 'recibido' : 'parcial',
-                            'fecha_recepcion' => $data['fecha_recepcion'],
-                        ]);
-
-                        // Notificaciones de stock bajo mínimo
-                        foreach ($alertasStock as $alerta) {
-                            Notification::make()->warning()
-                                ->title('Stock bajo mínimo')
-                                ->body($alerta)
-                                ->send();
-                        }
-
-                        $mensaje = $todoRecibido
-                            ? 'Recepción completa registrada. Inventario actualizado.'
-                            : 'Recepción parcial registrada. Hay ítems con cantidad pendiente.';
-
-                        Notification::make()->success()->title($mensaje)->send();
-                    }),
+                    ->url(fn($record) => PedidoCompraResource::getUrl('recibir', ['record' => $record])),
 
                 Tables\Actions\Action::make('cancelar')
                     ->label('Cancelar OC')
@@ -593,6 +456,7 @@ class PedidoCompraResource extends Resource
                         Notification::make()->success()->title('Orden de compra cancelada')->send();
                     }),
             ])
+            ->modifyQueryUsing(fn($query) => $query->with('items'))
             ->defaultSort('created_at', 'desc');
     }
 
@@ -630,13 +494,42 @@ class PedidoCompraResource extends Resource
                     Infolists\Components\RepeatableEntry::make('items')
                         ->label('')
                         ->schema([
-                            Infolists\Components\TextEntry::make('producto.nombre')->label('Producto'),
-                            Infolists\Components\TextEntry::make('cantidad'),
-                            Infolists\Components\TextEntry::make('cantidad_recibida')->label('Recibida'),
-                            Infolists\Components\TextEntry::make('precio_unitario')->label('P. Unit.')->money('USD'),
-                            Infolists\Components\TextEntry::make('subtotal')->money('USD'),
+                            Infolists\Components\TextEntry::make('producto.nombre')
+                                ->label('Producto'),
+
+                            Infolists\Components\TextEntry::make('cantidad')
+                                ->label('Ordenado'),
+
+                            Infolists\Components\TextEntry::make('cantidad_recibida')
+                                ->label('Recibido'),
+
+                            Infolists\Components\TextEntry::make('cantidad_pendiente')
+                                ->label('Pendiente')
+                                ->color(fn($state) => floatval($state) > 0 ? 'warning' : 'success'),
+
+                            Infolists\Components\TextEntry::make('estado_item')
+                                ->label('Estado')
+                                ->badge()
+                                ->state(fn($record) => match(true) {
+                                    floatval($record->cantidad_recibida) >= floatval($record->cantidad) => 'Completo',
+                                    floatval($record->cantidad_recibida) > 0                            => 'Parcial',
+                                    default                                                             => 'Pendiente',
+                                })
+                                ->color(fn(string $state) => match($state) {
+                                    'Completo'  => 'success',
+                                    'Parcial'   => 'warning',
+                                    'Pendiente' => 'danger',
+                                    default     => 'gray',
+                                }),
+
+                            Infolists\Components\TextEntry::make('precio_unitario')
+                                ->label('P. Unit.')
+                                ->money('USD'),
+
+                            Infolists\Components\TextEntry::make('subtotal')
+                                ->money('USD'),
                         ])
-                        ->columns(5),
+                        ->columns(7),
                 ]),
 
             Infolists\Components\Section::make('Historial de Cambios')
@@ -662,7 +555,7 @@ class PedidoCompraResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $pendientes = static::getModel()::whereIn('estado', ['enviado', 'confirmado'])->count();
+        $pendientes = static::getModel()::whereIn('estado', ['enviado', 'confirmado', 'parcial'])->count();
         return $pendientes > 0 ? (string) $pendientes : null;
     }
 
@@ -678,7 +571,19 @@ class PedidoCompraResource extends Resource
 
     public static function generarRecomendaciones(): array
     {
-        // Traer todos los inventarios con stock por debajo del mínimo
+        $ocsPendientes = \App\Models\PedidoCompra::whereIn('estado', ['borrador', 'enviado', 'confirmado', 'parcial'])
+            ->with('items')
+            ->get();
+        $productosEnOC  = [];
+        $proveedoresEnOC = [];
+
+        foreach ($ocsPendientes as $oc) {
+            $proveedoresEnOC[$oc->proveedor_id][] = $oc->numero;
+            foreach ($oc->items as $item) {
+                $productosEnOC[$oc->proveedor_id][$item->producto_id][] = $oc->numero;
+            }
+        }
+
         $inventarios = InventarioAlmacen::with(['producto.proveedor'])
             ->where('stock_minimo', '>', 0)
             ->whereColumn('stock_actual', '<', 'stock_minimo')
@@ -689,22 +594,18 @@ class PedidoCompraResource extends Resource
         $recomendaciones = [];
 
         foreach ($inventarios as $productoId => $items) {
-            // Sumar stock total y mínimo global del producto entre todas sus sucursales
             $stockTotal = $items->sum(fn($i) => floatval($i->stock_actual));
             $stockMin   = $items->sum(fn($i) => floatval($i->stock_minimo));
 
-            // Si sumando todas las sucursales ya supera el mínimo global, saltar
             if ($stockTotal >= $stockMin) continue;
 
             $producto = $items->first()->producto;
             if (!$producto) continue;
 
-            // Promedio diario de ventas en los últimos 30 días
-            $ventasMes = (float) MovimientoInventario::where('tipo', 'salida_venta')
+            $ventasMes      = (float) MovimientoInventario::where('tipo', 'salida_venta')
                 ->where('producto_id', $productoId)
                 ->where('fecha_movimiento', '>=', now()->subDays(30))
                 ->sum('cantidad');
-
             $promedioDiario = $ventasMes / 30;
             $diasProveedor  = $producto->proveedor?->tiempo_entrega_dias ?? 7;
 
@@ -712,22 +613,30 @@ class PedidoCompraResource extends Resource
                 ceil($promedioDiario * ($diasProveedor + 7)),
                 ceil(($stockMin - $stockTotal) * 1.5)
             );
-
-            // Si cant_sugerida quedó en 0 (sin ventas y stock_min-stock_actual muy pequeño)
             if ($cantSugerida <= 0) {
                 $cantSugerida = (int) ceil($stockMin - $stockTotal);
             }
 
+            $proveedorId = $producto->proveedor_id;
+            $ocProducto   = $productosEnOC[$proveedorId][$productoId] ?? [];
+            $ocProveedor  = $proveedoresEnOC[$proveedorId] ?? [];
+
             $recomendaciones[] = [
-                'producto'      => $producto->nombre,
-                'proveedor'     => $producto->proveedor?->nombre ?? '— Sin proveedor —',
-                'proveedor_id'  => $producto->proveedor_id,
-                'producto_id'   => $producto->id,
-                'stock_actual'  => round($stockTotal, 4),
-                'stock_minimo'  => round($stockMin, 4),
-                'prom_diario'   => round($promedioDiario, 4),
-                'cant_sugerida' => $cantSugerida,
-                'precio'        => floatval($producto->precio_compra),
+                'producto'         => $producto->nombre,
+                'proveedor'        => $producto->proveedor?->nombre ?? '— Sin proveedor —',
+                'proveedor_id'     => $proveedorId,
+                'producto_id'      => $producto->id,
+                'stock_actual'     => round($stockTotal, 4),
+                'stock_minimo'     => round($stockMin, 4),
+                'prom_diario'      => round($promedioDiario, 4),
+                'cant_sugerida'    => $cantSugerida,
+                'precio'           => floatval($producto->precio_compra),
+                'unidad_medida'    => $producto->unidad_medida ?? 'unidad',
+                // ─── Nuevos campos de estado OC ───
+                'en_oc'            => !empty($ocProducto),
+                'oc_numeros'       => $ocProducto,
+                'proveedor_en_oc'  => !empty($ocProveedor),
+                'oc_proveedor_nums'=> array_unique($ocProveedor),
             ];
         }
 
@@ -735,14 +644,14 @@ class PedidoCompraResource extends Resource
 
         return $recomendaciones;
     }
-
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListPedidoCompra::route('/'),
-            'create' => Pages\CreatePedidoCompra::route('/create'),
-            'view'   => Pages\ViewPedidoCompra::route('/{record}'),
-            'edit'   => Pages\EditPedidoCompra::route('/{record}/edit'),
+            'index'   => Pages\ListPedidoCompra::route('/'),
+            'create'  => Pages\CreatePedidoCompra::route('/create'),
+            'view'    => Pages\ViewPedidoCompra::route('/{record}'),
+            'edit'    => Pages\EditPedidoCompra::route('/{record}/edit'),
+            'recibir' => Pages\RegistrarRecepcion::route('/{record}/recibir'),
         ];
     }
 }

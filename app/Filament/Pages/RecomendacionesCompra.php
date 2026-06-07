@@ -78,12 +78,18 @@ class RecomendacionesCompra extends Page
      */
     public function crearOCPorProveedor(string $proveedor): void
     {
+        // Solo incluir productos que NO están ya en una OC pendiente
         $items = collect($this->recomendaciones)
             ->where('proveedor', $proveedor)
+            ->where('en_oc', false)  // ← filtro clave
             ->values();
 
         if ($items->isEmpty()) {
-            Notification::make()->warning()->title('Sin productos para este proveedor')->send();
+            Notification::make()
+                ->warning()
+                ->title('Todos los productos ya tienen OC pendiente')
+                ->body('No hay productos nuevos que ordenar para este proveedor.')
+                ->send();
             return;
         }
 
