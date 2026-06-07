@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Logistica;
 
 use App\Models\Traslado;
 use App\Models\TrasladoItem;
+use App\Models\User;
 use App\Services\DistanceCalculator;
 use App\Services\RedistribucionService;
 use Filament\Notifications\Notification;
@@ -97,6 +98,16 @@ class RedistribucionSucursales extends Page
                     "Cantidad: {$sug['cantidad_sugerida']} u. · {$sug['distancia_km']} km · \${$sug['costo_estimado']}"
                 )
                 ->send();
+
+            $destinoAdmins = User::role('admin_sucursal')
+                ->where('almacen_id', $sug['destino_id'])
+                ->get();
+            if ($destinoAdmins->isNotEmpty()) {
+                Notification::make()
+                    ->title('Redistribución automática')
+                    ->info()
+                    ->sendToDatabase($destinoAdmins);
+            }
 
             $this->cargarDatos();
 

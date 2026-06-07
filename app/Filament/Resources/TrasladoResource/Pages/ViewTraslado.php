@@ -5,6 +5,7 @@ namespace App\Filament\Resources\TrasladoResource\Pages;
 use App\Filament\Resources\TrasladoResource;
 use App\Models\InventarioAlmacen;
 use App\Models\Transportista;
+use App\Models\User;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -42,6 +43,18 @@ class ViewTraslado extends ViewRecord
                         'asignado_por'     => auth()->id(),
                     ]);
                     Notification::make()->success()->title('Transporte asignado')->send();
+
+                    $destinoAdmins = User::role('admin_sucursal')
+                        ->where('almacen_id', $this->record->almacen_destino_id)
+                        ->get();
+                    if ($destinoAdmins->isNotEmpty()) {
+                        Notification::make()
+                            ->title('Traslado en camino: ' . $this->record->numero)
+                            ->body('Se ha asignado transporte. Llegará el ' . $data['fecha_salida'] . '.')
+                            ->info()
+                            ->sendToDatabase($destinoAdmins);
+                    }
+
                     $this->record->refresh();
                 }),
 
@@ -56,6 +69,18 @@ class ViewTraslado extends ViewRecord
                 ->action(function () {
                     $this->record->update(['estado' => 'en_transito']);
                     Notification::make()->success()->title('Traslado en tránsito')->send();
+
+                    $destinoAdmins = User::role('admin_sucursal')
+                        ->where('almacen_id', $this->record->almacen_destino_id)
+                        ->get();
+                    if ($destinoAdmins->isNotEmpty()) {
+                        Notification::make()
+                            ->title('Traslado en tránsito: ' . $this->record->numero)
+                            ->body('El pedido está en camino a tu sucursal.')
+                            ->warning()
+                            ->sendToDatabase($destinoAdmins);
+                    }
+
                     $this->record->refresh();
                 }),
 
@@ -106,6 +131,17 @@ class ViewTraslado extends ViewRecord
                         ->title('Entrega completada')
                         ->body('El inventario ha sido actualizado.')
                         ->send();
+
+                    $destinoAdmins = User::role('admin_sucursal')
+                        ->where('almacen_id', $this->record->almacen_destino_id)
+                        ->get();
+                    if ($destinoAdmins->isNotEmpty()) {
+                        Notification::make()
+                            ->title('Traslado entregado: ' . $this->record->numero)
+                            ->body('Stock actualizado. Confirma la recepción en tu panel.')
+                            ->success()
+                            ->sendToDatabase($destinoAdmins);
+                    }
 
                     $this->record->refresh();
                 }),

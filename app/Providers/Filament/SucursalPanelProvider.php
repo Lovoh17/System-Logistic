@@ -74,6 +74,7 @@ class SucursalPanelProvider extends PanelProvider
             ])
             ->authMiddleware([Authenticate::class])
             ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             ->breadcrumbs(true)
             ->maxContentWidth('full');
     }

@@ -5,6 +5,7 @@ namespace App\Filament\Sucursal\Resources\TrasladoSucursalResource\Pages;
 use App\Filament\Sucursal\Resources\TrasladoSucursalResource;
 use App\Models\InventarioAlmacen;
 use App\Models\TrasladoItem;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -115,6 +116,15 @@ class ViewTrasladoSucursal extends ViewRecord
                         ->title('Traslado aceptado')
                         ->body('El inventario de tu sucursal ha sido actualizado.')
                         ->send();
+
+                    $logistica = User::role(['logistica', 'supervisor_bodega', 'super_admin'])->get();
+                    if ($logistica->isNotEmpty()) {
+                        Notification::make()
+                            ->title('Traslado recibido: ' . $this->record->numero)
+                            ->body('La sucursal destino confirmó la recepción del traslado.')
+                            ->success()
+                            ->sendToDatabase($logistica);
+                    }
 
                     $this->record->refresh();
                 }),

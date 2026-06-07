@@ -91,6 +91,8 @@ class ContadorPanelProvider extends PanelProvider
             ->authMiddleware([Authenticate::class])
             ->globalSearch()
             ->breadcrumbs(true)
-            ->maxContentWidth('full');
+            ->maxContentWidth('full')
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s');
     }
 }
