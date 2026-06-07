@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\RecomendacionesCompra;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Http\Middleware\Authenticate;
@@ -34,6 +35,11 @@ class LogisticaPanelProvider extends PanelProvider
                 'Transporte',
                 'Envíos',
                 'Reportes',
+            ])
+            ->pages([
+                \App\Filament\Pages\Logistica\DashboardLogistica::class,
+                \App\Filament\Pages\Logistica\RedistribucionSucursales::class,
+                RecomendacionesCompra::class,
             ])
             ->resources([
                 \App\Filament\Resources\PedidoCompraResource::class,

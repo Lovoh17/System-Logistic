@@ -15,6 +15,13 @@ class ViewPedidoCompra extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('recibir')
+                ->label('Registrar Recepción')
+                ->icon('heroicon-o-inbox-arrow-down')
+                ->color('success')
+                ->visible(fn() => in_array($this->record->estado, ['enviado', 'confirmado', 'parcial']))
+                ->url(fn() => PedidoCompraResource::getUrl('recibir', ['record' => $this->record])),
+
             Actions\EditAction::make(),
             Actions\DeleteAction::make(),
         ];

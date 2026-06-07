@@ -2,12 +2,16 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Contador\Pages\DashboardContador;
-use App\Filament\Contador\Pages\ReportesContador;
-use App\Filament\Contador\Pages\EstadoResultados;
+use App\Filament\Contador\Pages\BalanceGeneral;
 use App\Filament\Contador\Pages\CuentasPorCobrar;
-use App\Filament\Contador\Widgets\KPIsFinancierosWidget;
+use App\Filament\Contador\Pages\CuentasPorPagar;
+use App\Filament\Contador\Pages\DashboardContador;
+use App\Filament\Contador\Pages\DeclaracionIva;
+use App\Filament\Contador\Pages\EstadoResultados;
+use App\Filament\Contador\Pages\LibroMayor;
+use App\Filament\Contador\Pages\ReportesContador;
 use App\Filament\Contador\Widgets\GraficoVentasMensualesWidget;
+use App\Filament\Contador\Widgets\KPIsFinancierosWidget;
 use App\Filament\Contador\Widgets\TopProductosWidget;
 use App\Filament\Contador\Widgets\VentasSucursalWidget;
 use Filament\Http\Middleware\Authenticate;
@@ -47,16 +51,25 @@ class ContadorPanelProvider extends PanelProvider
             ->brandLogoHeight('2.5rem')
             ->darkMode(false)
             ->sidebarCollapsibleOnDesktop()
+            ->discoverResources(
+                in: app_path('Filament/Contador/Resources'),
+                for: 'App\\Filament\\Contador\\Resources'
+            )
             ->navigationGroups([
+                NavigationGroup::make('Contabilidad')->icon('heroicon-o-book-open'),
                 NavigationGroup::make('Finanzas')->icon('heroicon-o-currency-dollar'),
                 NavigationGroup::make('Reportes')->icon('heroicon-o-document-chart-bar'),
                 NavigationGroup::make('Cuentas')->icon('heroicon-o-clipboard-document-list'),
             ])
             ->pages([
                 DashboardContador::class,
-                ReportesContador::class,
+                LibroMayor::class,
+                BalanceGeneral::class,
                 EstadoResultados::class,
+                DeclaracionIva::class,
+                ReportesContador::class,
                 CuentasPorCobrar::class,
+                CuentasPorPagar::class,
             ])
             ->widgets([
                 KPIsFinancierosWidget::class,

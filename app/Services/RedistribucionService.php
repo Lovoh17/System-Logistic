@@ -1,0 +1,130 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Almacen;
+use App\Models\InventarioAlmacen;
+use App\Models\Transportista;
+
+class RedistribucionService
+{
+    public function __construct(private DistanceCalculator $distCalc) {}
+
+    public function analizarDesequilibrios(): array
+    {
+        $tarifaKm = (float) (Transportista::where('estado', 'disponible')
+            ->whereNotNull('tarifa_km')
+            ->avg('tarifa_km') ?? 0.50);
+
+        $inventarios = InventarioAlmacen::with(['producto', 'almacen'])
+            ->whereHas('producto', fn($q) => $q->activo())
+            ->get()
+            ->groupBy('producto_id');
+
+        $sugerencias = [];
+
+        foreach ($inventarios as $productoId => $items) {
+            if ($items->count() < 2) continue;
+
+            $deficit = $items->filter(
+                fn($inv) => $inv->stock_minimo > 0 && $inv->stock_actual < $inv->stock_minimo
+            );
+            $sobrestock = $items->filter(
+                fn($inv) => $inv->stock_maximo > 0 && $inv->stock_actual > $inv->stock_maximo
+            );
+
+            if ($deficit->isEmpty() || $sobrestock->isEmpty()) continue;
+
+            foreach ($deficit as $dest) {
+                $mejorOrigen    = null;
+                $mejorDistancia = PHP_FLOAT_MAX;
+                $mejorExcedente = 0.0;
+
+                foreach ($sobrestock as $orig) {
+                    if ($orig->almacen_id === $dest->almacen_id) continue;
+
+                    $dist = $this->distCalc->betweenAlmacenes($orig->almacen, $dest->almacen);
+                    if ($dist === null) continue;
+
+                    if ($dist < $mejorDistancia) {
+                        $mejorDistancia = $dist;
+                        $mejorOrigen    = $orig;
+                        $mejorExcedente = (float) $orig->stock_actual - (float) $orig->stock_maximo;
+                    }
+                }
+
+                if ($mejorOrigen === null) continue;
+
+                $cantNecesaria  = (float) $dest->stock_minimo - (float) $dest->stock_actual;
+                $cantTransferir = min($cantNecesaria, $mejorExcedente);
+
+                if ($cantTransferir <= 0) continue;
+
+                $sugerencias[] = [
+                    'producto_id'          => $dest->producto_id,
+                    'producto_nombre'      => $dest->producto?->nombre ?? '—',
+                    'origen_id'            => $mejorOrigen->almacen_id,
+                    'origen_nombre'        => $mejorOrigen->almacen?->nombre ?? '—',
+                    'destino_id'           => $dest->almacen_id,
+                    'destino_nombre'       => $dest->almacen?->nombre ?? '—',
+                    'stock_origen'         => round((float) $mejorOrigen->stock_actual, 4),
+                    'stock_maximo_origen'  => round((float) $mejorOrigen->stock_maximo, 4),
+                    'stock_destino'        => round((float) $dest->stock_actual, 4),
+                    'stock_minimo_destino' => round((float) $dest->stock_minimo, 4),
+                    'excedente'            => round($mejorExcedente, 4),
+                    'deficit'              => round($cantNecesaria, 4),
+                    'cantidad_sugerida'    => round($cantTransferir, 4),
+                    'distancia_km'         => round($mejorDistancia, 4),
+                    'costo_estimado'       => round($mejorDistancia * $tarifaKm, 2),
+                    'urgencia'             => $this->calcularUrgencia($dest),
+                ];
+            }
+        }
+
+        usort($sugerencias, function ($a, $b) {
+            if ($b['urgencia'] !== $a['urgencia']) {
+                return $b['urgencia'] <=> $a['urgencia'];
+            }
+            return $a['distancia_km'] <=> $b['distancia_km'];
+        });
+
+        return $sugerencias;
+    }
+
+    public function matrizDistancias(): array
+    {
+        $almacenes = Almacen::activo()
+            ->whereNotNull('latitud')
+            ->whereNotNull('longitud')
+            ->get();
+
+        $matriz = [];
+
+        foreach ($almacenes as $a) {
+            foreach ($almacenes as $b) {
+                if ($a->id === $b->id) {
+                    $matriz[$a->id][$b->id] = 0.0;
+                    continue;
+                }
+
+                if (!isset($matriz[$a->id][$b->id])) {
+                    $dist = $this->distCalc->betweenAlmacenes($a, $b);
+                    $matriz[$a->id][$b->id] = $dist;
+                    $matriz[$b->id][$a->id] = $dist;
+                }
+            }
+        }
+
+        return ['almacenes' => $almacenes->values(), 'matriz' => $matriz];
+    }
+
+    private function calcularUrgencia(InventarioAlmacen $inv): int
+    {
+        $stock = (float) $inv->stock_actual;
+        $min   = (float) $inv->stock_minimo;
+
+        if ($stock <= 0)                       return 3;
+        if ($min > 0 && $stock < $min * 0.5)  return 2;
+        return 1;
+    }
+}

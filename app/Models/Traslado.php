@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Traslado extends Model
 {
@@ -27,6 +28,9 @@ class Traslado extends Model
         'observaciones',
         'creado_por',
         'asignado_por',
+        'aprobado_por',
+        'fecha_aprobacion',
+        'fecha_completado',
     ];
 
     protected $casts = [
@@ -35,7 +39,9 @@ class Traslado extends Model
         'fecha_programada' => 'date',
         'fecha_salida' => 'date',
         'fecha_entrega_estimada' => 'date',
-        'fecha_entrega_real' => 'date',
+        'fecha_entrega_real'  => 'date',
+        'fecha_aprobacion'    => 'datetime',
+        'fecha_completado'    => 'datetime',
     ];
 
     // Relaciones
@@ -69,10 +75,14 @@ class Traslado extends Model
         return $this->belongsTo(User::class, 'asignado_por');
     }
 
-    // Generar número de traslado
+    public function items(): HasMany
+    {
+        return $this->hasMany(TrasladoItem::class);
+    }
+
     public static function generarNumero(): string
     {
-        $ultimo = self::orderBy('id', 'desc')->first(); // ✅ Quitar withTrashed()
+        $ultimo = self::orderBy('id', 'desc')->first();
         $numero = $ultimo ? intval(substr($ultimo->numero, -6)) + 1 : 1;
         return 'TRA-' . date('Ymd') . '-' . str_pad($numero, 6, '0', STR_PAD_LEFT);
     }

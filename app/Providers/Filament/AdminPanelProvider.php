@@ -4,6 +4,9 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\Logistica\MapaTransportistas;
+use App\Filament\Pages\Logistica\RedistribucionSucursales;
+use App\Filament\Pages\RecomendacionesCompra;
+use App\Filament\Resources\AlmacenResource;
 use App\Filament\Resources\{ClienteResource, TrasladoResource ,InventarioAlmacenResource, UserResource , EnvioResource, MovimientoInventarioResource};
 use App\Filament\Resources\{PedidoCompraResource, PedidoVentaResource, ProductoResource};
 use App\Filament\Resources\{ProveedorResource, TransportistaResource};
@@ -54,8 +57,11 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
                 MapaTransportistas::class,
+                RedistribucionSucursales::class,
+                RecomendacionesCompra::class,
             ])
             ->resources([
+                AlmacenResource::class,
                 ProveedorResource::class,
                 ClienteResource::class,
                 ProductoResource::class,

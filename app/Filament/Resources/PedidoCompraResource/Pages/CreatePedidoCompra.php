@@ -201,16 +201,15 @@ class CreatePedidoCompra extends CreateRecord
         $subtotal = collect($items)->sum(fn ($item) => floatval($item['subtotal'] ?? 0));
         $impuesto  = floatval($data['impuesto']  ?? 0);
         $descuento = floatval($data['descuento'] ?? 0);
-        $total     = round($subtotal + $impuesto - $descuento, 2);
 
         $data['subtotal'] = round($subtotal, 2);
-        $data['total']    = $total;
+        $data['total']    = round($subtotal + $impuesto - $descuento, 2);
 
         Log::info('[OC] mutateFormDataBeforeCreate', [
             'user_id'  => $data['user_id'],
             'items'    => count($items),
-            'subtotal' => $subtotal,
-            'total'    => $total,
+            'subtotal' => $data['subtotal'],
+            'total'    => $data['total'],
         ]);
 
         return $data;

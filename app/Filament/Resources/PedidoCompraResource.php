@@ -3,6 +3,9 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PedidoCompraResource\Pages;
+use App\Models\Almacen;
+use App\Models\InventarioAlmacen;
+use App\Models\MovimientoInventario;
 use App\Models\PedidoCompra;
 use Filament\Resources\Resource;
 
@@ -10,11 +13,11 @@ class PedidoCompraResource extends Resource
 {
     protected static ?string $model = PedidoCompra::class;
 
-    protected static ?string $navigationIcon  = 'heroicon-o-shopping-bag';
-    protected static ?string $navigationLabel = 'Órdenes de Compra';
-    protected static ?string $navigationGroup = 'Pedidos';
-    protected static ?int    $navigationSort  = 1;
-    protected static ?string $modelLabel      = 'Orden de Compra';
+    protected static ?string $navigationIcon   = 'heroicon-o-shopping-bag';
+    protected static ?string $navigationLabel  = 'Órdenes de Compra';
+    protected static ?string $navigationGroup  = 'Pedidos';
+    protected static ?int    $navigationSort   = 1;
+    protected static ?string $modelLabel       = 'Orden de Compra';
     protected static ?string $pluralModelLabel = 'Órdenes de Compra';
 
     public static function getPages(): array
@@ -29,7 +32,7 @@ class PedidoCompraResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $pendientes = static::getModel()::whereIn('estado', ['enviado', 'confirmado'])->count();
+        $pendientes = static::getModel()::whereIn('estado', ['enviado', 'confirmado', 'parcial'])->count();
         return $pendientes > 0 ? (string) $pendientes : null;
     }
 
