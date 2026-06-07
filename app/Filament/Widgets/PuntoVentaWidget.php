@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Resources\PedidoVentaResource;
 use App\Models\Producto;
 use App\Models\Cliente;
 use App\Models\PedidoVenta;
@@ -170,24 +171,16 @@ class PuntoVentaWidget extends Widget
             }
             
             DB::commit();
-            
-            $this->mostrarTicket($pedido);
+
             $this->limpiarCarrito();
             $this->cliente_id = null;
+
+            $this->redirect(PedidoVentaResource::getUrl('view', ['record' => $pedido]));
             
         } catch (\Exception $e) {
             DB::rollBack();
             Notification::make()->title('Error al procesar venta')->body($e->getMessage())->danger()->send();
         }
-    }
-    
-    public function mostrarTicket($pedido)
-    {
-        $pedido->load(['cliente', 'items.producto']);
-        
-        $html = view('filament.ventas.widgets.ticket-venta', compact('pedido'))->render();
-        
-        $this->dispatch('open-ticket-modal', html: $html);
     }
     
     public function getProductosBusquedaProperty()
