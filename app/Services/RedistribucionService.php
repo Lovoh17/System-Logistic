@@ -8,13 +8,17 @@ use App\Models\Transportista;
 
 class RedistribucionService
 {
+    private const TARIFA_KM_DEFAULT = 0.50;
+
     public function __construct(private DistanceCalculator $distCalc) {}
 
     public function analizarDesequilibrios(): array
     {
-        $tarifaKm = (float) (Transportista::where('estado', 'disponible')
-            ->whereNotNull('tarifa_km')
-            ->avg('tarifa_km') ?? 0.50);
+        // Precarga transportistas disponibles indexados por almacen_id
+        $transportistasDisponibles = Transportista::where('estado', 'disponible')
+            ->with('user')
+            ->get()
+            ->groupBy('almacen_id');
 
         $inventarios = InventarioAlmacen::with(['producto', 'almacen'])
             ->whereHas('producto', fn($q) => $q->activo())
@@ -36,9 +40,10 @@ class RedistribucionService
             if ($deficit->isEmpty() || $sobrestock->isEmpty()) continue;
 
             foreach ($deficit as $dest) {
-                $mejorOrigen    = null;
-                $mejorDistancia = PHP_FLOAT_MAX;
-                $mejorExcedente = 0.0;
+                $mejorOrigen       = null;
+                $mejorDistancia    = PHP_FLOAT_MAX;
+                $mejorExcedente    = 0.0;
+                $mejorTransportista = null;
 
                 foreach ($sobrestock as $orig) {
                     if ($orig->almacen_id === $dest->almacen_id) continue;
@@ -46,10 +51,21 @@ class RedistribucionService
                     $dist = $this->distCalc->betweenAlmacenes($orig->almacen, $dest->almacen);
                     if ($dist === null) continue;
 
-                    if ($dist < $mejorDistancia) {
-                        $mejorDistancia = $dist;
-                        $mejorOrigen    = $orig;
-                        $mejorExcedente = (float) $orig->stock_actual - (float) $orig->stock_maximo;
+                    // Preferir origen con transportista disponible; si empatan distancia, ese gana
+                    $tieneTransportista = $transportistasDisponibles->has($orig->almacen_id);
+
+                    $mejorTieneTransportista = $mejorOrigen
+                        ? $transportistasDisponibles->has($mejorOrigen->almacen_id)
+                        : false;
+
+                    $esMejor = $dist < $mejorDistancia
+                        || ($dist === $mejorDistancia && $tieneTransportista && !$mejorTieneTransportista);
+
+                    if ($esMejor) {
+                        $mejorDistancia    = $dist;
+                        $mejorOrigen       = $orig;
+                        $mejorExcedente    = (float) $orig->stock_actual - (float) $orig->stock_maximo;
+                        $mejorTransportista = $transportistasDisponibles->get($orig->almacen_id)?->first();
                     }
                 }
 
@@ -75,8 +91,12 @@ class RedistribucionService
                     'deficit'              => round($cantNecesaria, 4),
                     'cantidad_sugerida'    => round($cantTransferir, 4),
                     'distancia_km'         => round($mejorDistancia, 4),
-                    'costo_estimado'       => round($mejorDistancia * $tarifaKm, 2),
+                    'costo_estimado'       => round($mejorDistancia * self::TARIFA_KM_DEFAULT, 2),
                     'urgencia'             => $this->calcularUrgencia($dest),
+                    // Transportista disponible en el almacén origen
+                    'transportista_id'     => $mejorTransportista?->id,
+                    'transportista_nombre' => $mejorTransportista?->user?->name ?? null,
+                    'transportista_placa'  => $mejorTransportista?->vehiculo_placa ?? null,
                 ];
             }
         }

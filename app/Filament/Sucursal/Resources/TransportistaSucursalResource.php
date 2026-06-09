@@ -3,6 +3,7 @@
 namespace App\Filament\Sucursal\Resources;
 
 use App\Filament\Sucursal\Resources\TransportistaSucursalResource\Pages;
+use App\Models\Almacen;
 use App\Models\Transportista;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -24,19 +25,26 @@ class TransportistaSucursalResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Información del Transportista')->columns(3)->schema([
+
+            Forms\Components\Section::make('Asignación')->columns(2)->schema([
                 Forms\Components\TextInput::make('codigo')
                     ->label('Código')
                     ->default(fn() => Transportista::generarCodigo())
-                    ->disabled()->dehydrated()->required()->columnSpan(1),
+                    ->disabled()->dehydrated()->required(),
 
-                Forms\Components\TextInput::make('nombre')
-                    ->label('Nombre / Empresa')
-                    ->required()->maxLength(150)->columnSpan(2),
+                Forms\Components\Select::make('user_id')
+                    ->label('Usuario / Conductor')
+                    ->relationship('user', 'name')
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->name} — {$record->email}")
+                    ->searchable()
+                    ->preload()
+                    ->required(),
 
-                Forms\Components\Select::make('tipo')
-                    ->options(['propio' => 'Flota Propia', 'externo' => 'Externo'])
-                    ->default('externo')->required()->columnSpan(1),
+                Forms\Components\Select::make('almacen_id')
+                    ->label('Sucursal')
+                    ->options(Almacen::where('activo', true)->pluck('nombre', 'id'))
+                    ->searchable()
+                    ->required(),
 
                 Forms\Components\Select::make('estado')
                     ->options([
@@ -45,35 +53,39 @@ class TransportistaSucursalResource extends Resource
                         'mantenimiento' => 'Mantenimiento',
                         'inactivo'      => 'Inactivo',
                     ])
-                    ->default('disponible')->required()->columnSpan(1),
-
-                Forms\Components\TextInput::make('email')->email()->columnSpan(1),
-                Forms\Components\TextInput::make('telefono')->label('Teléfono')->columnSpan(1),
+                    ->default('disponible')
+                    ->required(),
             ]),
 
             Forms\Components\Section::make('Vehículo')->columns(3)->schema([
                 Forms\Components\Select::make('vehiculo_tipo')
-                    ->label('Tipo de Vehículo')
-                    ->options(['camion' => 'Camión', 'pickup' => 'Pickup', 'furgon' => 'Furgón', 'moto' => 'Motocicleta', 'otro' => 'Otro'])
-                    ->columnSpan(1),
-                Forms\Components\TextInput::make('vehiculo_placa')->label('Placa')->maxLength(20)->columnSpan(1),
-                Forms\Components\TextInput::make('vehiculo_modelo')->label('Modelo')->maxLength(80)->columnSpan(1),
-                Forms\Components\TextInput::make('capacidad_kg')->label('Capacidad (kg)')->numeric()->columnSpan(1),
-                Forms\Components\TextInput::make('capacidad_m3')->label('Capacidad (m³)')->numeric()->columnSpan(1),
-                Forms\Components\Toggle::make('tiene_refrigeracion')->label('Refrigeración')->columnSpan(1),
-                Forms\Components\Toggle::make('tiene_gps')->label('GPS')->columnSpan(1),
+                    ->label('Tipo')
+                    ->options([
+                        'camion' => 'Camión',
+                        'pickup' => 'Pickup',
+                        'furgon' => 'Furgón',
+                        'moto'   => 'Motocicleta',
+                        'otro'   => 'Otro',
+                    ]),
+                Forms\Components\TextInput::make('vehiculo_placa')
+                    ->label('Placa')->maxLength(20),
+                Forms\Components\TextInput::make('vehiculo_modelo')
+                    ->label('Modelo')->maxLength(80),
+                Forms\Components\TextInput::make('capacidad_kg')
+                    ->label('Capacidad (kg)')->numeric(),
+                Forms\Components\TextInput::make('capacidad_m3')
+                    ->label('Capacidad (m³)')->numeric(),
+                Forms\Components\Toggle::make('tiene_refrigeracion')->label('Refrigeración'),
+                Forms\Components\Toggle::make('tiene_gps')->label('GPS'),
             ]),
 
-            Forms\Components\Section::make('Conductor')->columns(3)->schema([
-                Forms\Components\TextInput::make('conductor_nombre')->label('Nombre del Conductor')->maxLength(100),
-                Forms\Components\TextInput::make('conductor_licencia')->label('N° Licencia')->maxLength(30),
-                Forms\Components\TextInput::make('conductor_telefono')->label('Teléfono Conductor')->maxLength(20),
-            ]),
-
-            Forms\Components\Section::make('Tarifas')->columns(2)->schema([
-                Forms\Components\TextInput::make('tarifa_km')->label('Tarifa por Km ($)')->numeric()->prefix('$')->step(0.01),
-                Forms\Components\TextInput::make('tarifa_fija')->label('Tarifa Fija ($)')->numeric()->prefix('$')->step(0.01),
-                Forms\Components\Textarea::make('notas')->label('Notas')->rows(2)->columnSpanFull(),
+            Forms\Components\Section::make('Ubicación GPS')->columns(3)->schema([
+                Forms\Components\TextInput::make('latitud')
+                    ->numeric()->step(0.00000001)->nullable(),
+                Forms\Components\TextInput::make('longitud')
+                    ->numeric()->step(0.00000001)->nullable(),
+                Forms\Components\TextInput::make('ubicacion_actual')
+                    ->label('Descripción de ubicación')->maxLength(255)->nullable(),
             ]),
         ]);
     }
@@ -82,14 +94,38 @@ class TransportistaSucursalResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('codigo')->badge()->color('gray')->searchable(),
-                Tables\Columns\TextColumn::make('nombre')->searchable()->sortable()
-                    ->description(fn($record) => ucfirst($record->tipo)),
-                Tables\Columns\TextColumn::make('vehiculo_tipo')->label('Vehículo')->badge()->color('info'),
-                Tables\Columns\TextColumn::make('vehiculo_placa')->label('Placa')->searchable(),
-                Tables\Columns\TextColumn::make('conductor_nombre')->label('Conductor')->searchable()->toggleable(),
-                Tables\Columns\IconColumn::make('tiene_gps')->label('GPS')->boolean(),
-                Tables\Columns\IconColumn::make('tiene_refrigeracion')->label('❄️')->boolean(),
+                Tables\Columns\TextColumn::make('codigo')
+                    ->badge()->color('gray')->searchable(),
+
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Conductor')
+                    ->searchable()->sortable()
+                    ->description(fn($record) => $record->user?->email),
+
+                Tables\Columns\TextColumn::make('almacen.nombre')
+                    ->label('Sucursal')
+                    ->searchable()->badge()->color('primary'),
+
+                Tables\Columns\TextColumn::make('vehiculo_tipo')
+                    ->label('Vehículo')->badge()->color('info'),
+
+                Tables\Columns\TextColumn::make('vehiculo_placa')
+                    ->label('Placa')->searchable(),
+
+                Tables\Columns\IconColumn::make('tiene_gps')
+                    ->label('GPS')->boolean(),
+
+                Tables\Columns\IconColumn::make('tiene_refrigeracion')
+                    ->label('❄️')->boolean(),
+
+                Tables\Columns\TextColumn::make('ubicacion_actual')
+                    ->label('Ubicación')
+                    ->toggleable()
+                    ->description(fn($record) => $record->latitud
+                        ? "{$record->latitud}, {$record->longitud}"
+                        : null
+                    ),
+
                 Tables\Columns\BadgeColumn::make('estado')->colors([
                     'success' => 'disponible',
                     'warning' => 'en_ruta',
@@ -104,8 +140,9 @@ class TransportistaSucursalResource extends Resource
                     'mantenimiento' => 'Mantenimiento',
                     'inactivo'      => 'Inactivo',
                 ]),
-                Tables\Filters\SelectFilter::make('tipo')
-                    ->options(['propio' => 'Propio', 'externo' => 'Externo']),
+                Tables\Filters\SelectFilter::make('almacen_id')
+                    ->label('Sucursal')
+                    ->options(Almacen::pluck('nombre', 'id')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

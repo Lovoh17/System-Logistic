@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             'supervisor_bodega' => 'Supervisor de bodega — gestión de inventario y traslados',
             'logistica'         => 'Logística — gestión de envíos y transportistas',
             'contador'          => 'Contador — reportes financieros y estado de resultados',
+            'transportista'     => 'Transportista — conductor asignado a una sucursal',
         ];
 
         $rolesCreados = [];
@@ -587,65 +588,80 @@ class DatabaseSeeder extends Seeder
 
         $transportistasData = [
             [
-                'codigo' => 'TRANS-001',
-                'nombre' => 'Transportes El Halcón',
-                'tipo' => 'externo',
-                'vehiculo_tipo' => 'camion',
-                'vehiculo_placa' => 'C 123-456',
-                'capacidad_kg' => 8000.00,
-                'capacidad_m3' => 45.00,
-                'tiene_gps' => true,
-                'conductor_nombre' => 'Luis Martínez',
-                'conductor_licencia' => 'LIC-001',
-                'conductor_telefono' => '7700-1111',
-                'email' => 'operaciones@elhalcon.com',
-                'telefono' => '2244-5678',
-                'tarifa_km' => 2.50,
-                'tarifa_fija' => 25.00,
-                'estado' => 'disponible',
+                'usuario' => [
+                    'name'     => 'Luis Martínez',
+                    'email'    => 'trans01@tracelog.com',
+                    'password' => Hash::make('password'),
+                    'almacen_id' => $almacenesPorCodigo['ALM-001']->id,
+                    'email_verified_at' => now(),
+                ],
+                'vehiculo' => [
+                    'codigo'        => 'TRANS-001',
+                    'vehiculo_tipo'  => 'camion',
+                    'vehiculo_placa' => 'C 123-456',
+                    'vehiculo_modelo'=> 'Kenworth T370',
+                    'capacidad_kg'   => 8000.00,
+                    'capacidad_m3'   => 45.00,
+                    'tiene_gps'      => true,
+                    'estado'         => 'disponible',
+                ],
+                'almacen_codigo' => 'ALM-001',
             ],
             [
-                'codigo' => 'TRANS-002',
-                'nombre' => 'Fletes Express',
-                'tipo' => 'externo',
-                'vehiculo_tipo' => 'pickup',
-                'vehiculo_placa' => 'P 789-012',
-                'capacidad_kg' => 1500.00,
-                'capacidad_m3' => 8.00,
-                'tiene_gps' => false,
-                'conductor_nombre' => 'Carlos Pérez',
-                'conductor_licencia' => 'LIC-002',
-                'conductor_telefono' => '7711-2222',
-                'email' => 'info@fletesexpress.com',
-                'telefono' => '2255-6789',
-                'tarifa_km' => 1.50,
-                'tarifa_fija' => 15.00,
-                'estado' => 'disponible',
+                'usuario' => [
+                    'name'     => 'Carlos Pérez',
+                    'email'    => 'trans02@tracelog.com',
+                    'password' => Hash::make('password'),
+                    'almacen_id' => $almacenesPorCodigo['ALM-002']->id,
+                    'email_verified_at' => now(),
+                ],
+                'vehiculo' => [
+                    'codigo'        => 'TRANS-002',
+                    'vehiculo_tipo'  => 'pickup',
+                    'vehiculo_placa' => 'P 789-012',
+                    'vehiculo_modelo'=> 'Toyota Hilux',
+                    'capacidad_kg'   => 1500.00,
+                    'capacidad_m3'   => 8.00,
+                    'tiene_gps'      => false,
+                    'estado'         => 'disponible',
+                ],
+                'almacen_codigo' => 'ALM-002',
             ],
             [
-                'codigo' => 'TRANS-003',
-                'nombre' => 'Transporte Propio Central',
-                'tipo' => 'propio',
-                'vehiculo_tipo' => 'camion',
-                'vehiculo_placa' => 'C 456-789',
-                'capacidad_kg' => 5000.00,
-                'capacidad_m3' => 30.00,
-                'tiene_gps' => true,
-                'conductor_nombre' => 'Miguel Ángel Rivas',
-                'conductor_licencia' => 'LIC-003',
-                'conductor_telefono' => '7722-3333',
-                'email' => 'transporte@tracelog.com',
-                'telefono' => '2233-4455',
-                'tarifa_km' => 2.00,
-                'tarifa_fija' => 20.00,
-                'estado' => 'disponible',
+                'usuario' => [
+                    'name'     => 'Miguel Ángel Rivas',
+                    'email'    => 'trans03@tracelog.com',
+                    'password' => Hash::make('password'),
+                    'almacen_id' => $almacenesPorCodigo['ALM-003']->id,
+                    'email_verified_at' => now(),
+                ],
+                'vehiculo' => [
+                    'codigo'        => 'TRANS-003',
+                    'vehiculo_tipo'  => 'camion',
+                    'vehiculo_placa' => 'C 456-789',
+                    'vehiculo_modelo'=> 'Isuzu NQR',
+                    'capacidad_kg'   => 5000.00,
+                    'capacidad_m3'   => 30.00,
+                    'tiene_gps'      => true,
+                    'estado'         => 'disponible',
+                ],
+                'almacen_codigo' => 'ALM-003',
             ],
         ];
 
         foreach ($transportistasData as $data) {
+            $usuario = User::updateOrCreate(
+                ['email' => $data['usuario']['email']],
+                $data['usuario']
+            );
+            $usuario->assignRole('transportista');
+
             Transportista::firstOrCreate(
-                ['codigo' => $data['codigo']],
-                $data
+                ['codigo' => $data['vehiculo']['codigo']],
+                array_merge($data['vehiculo'], [
+                    'user_id'    => $usuario->id,
+                    'almacen_id' => $almacenesPorCodigo[$data['almacen_codigo']]->id,
+                ])
             );
         }
 
@@ -676,6 +692,9 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Almacenes creados      : ' . count($almacenes));
         $this->command->info('Clientes creados       : ' . count($clientesData));
         $this->command->info('Transportistas creados : ' . count($transportistasData));
+        $this->command->info('trans01@tracelog.com     → Rol: transportista (ALM-001)');
+        $this->command->info('trans02@tracelog.com     → Rol: transportista (ALM-002)');
+        $this->command->info('trans03@tracelog.com     → Rol: transportista (ALM-003)');
         $this->command->info('Registros inventario   : ' . (count($productos) * count($almacenes)));
         $this->command->info('');
 

@@ -10,6 +10,7 @@ use App\Models\PedidoCompra;
 use App\Models\PedidoCompraItem;
 use App\Models\Traslado;
 use App\Models\TrasladoItem;
+use App\Models\Transportista;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -238,16 +239,42 @@ class RegistrarRecepcion extends Page implements HasForms
         }
 
         $trasladosCreados = 0;
+        $sinTransportista = [];
+
+        // Transportista disponible en el almacén origen
+        $transportistaOrigen = Transportista::where('almacen_id', $almacenId)
+            ->where('estado', 'disponible')
+            ->with('user')
+            ->first();
+
+        if ($transportistaOrigen === null && !empty($trasladosSugeridos)) {
+            Notification::make()->warning()
+                ->title('Sin transportista disponible')
+                ->body('No hay transportista disponible en la sucursal origen. Los traslados se crearán sin asignar conductor.')
+                ->persistent()
+                ->send();
+        }
 
         foreach ($trasladosSugeridos as $almacenDestinoId => $items) {
             $productosTexto = collect($items)
                 ->map(fn($i) => "\"{$i['producto_nombre']}\" — déficit en {$i['almacen_nombre']}")
                 ->join(', ');
 
+            // Verificar también si hay transportista en destino para notificar
+            $transportistaDestino = Transportista::where('almacen_id', $almacenDestinoId)
+                ->where('estado', 'disponible')
+                ->first();
+
+            if ($transportistaDestino === null) {
+                $almNombre = Almacen::find($almacenDestinoId)?->nombre ?? "almacén #{$almacenDestinoId}";
+                $sinTransportista[] = $almNombre;
+            }
+
             $traslado = Traslado::create([
                 'numero'             => Traslado::generarNumero(),
                 'almacen_origen_id'  => $almacenId,
                 'almacen_destino_id' => $almacenDestinoId,
+                'transportista_id'   => $transportistaOrigen?->id,
                 'estado'             => 'sugerido',
                 'motivo'             => "Redistribución automática: {$productosTexto}.",
                 'creado_por'         => $userId,
@@ -279,9 +306,19 @@ class RegistrarRecepcion extends Page implements HasForms
         }
 
         if ($trasladosCreados > 0) {
+            $conductor = $transportistaOrigen?->user?->name ?? 'Sin asignar';
+            $placa     = $transportistaOrigen?->vehiculo_placa ?? '—';
             Notification::make()->info()
                 ->title("{$trasladosCreados} traslado(s) sugerido(s) generado(s)")
-                ->body('Revisa la sección de Traslados para aprobarlos y ejecutarlos.')
+                ->body("Conductor asignado: {$conductor} ({$placa}). Revisa la sección de Traslados para aprobarlos.")
+                ->persistent()
+                ->send();
+        }
+
+        if (!empty($sinTransportista)) {
+            Notification::make()->warning()
+                ->title('Sucursales destino sin transportista')
+                ->body('Sin conductor disponible en: ' . implode(', ', $sinTransportista))
                 ->persistent()
                 ->send();
         }

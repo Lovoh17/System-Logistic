@@ -3,9 +3,10 @@
 namespace App\Filament\Resources\TrasladoResource\Pages;
 
 use App\Filament\Resources\TrasladoResource;
-use App\Models\InventarioAlmacen;
+use App\Models\DistanciaSucursal;
 use App\Models\Transportista;
 use App\Models\User;
+use App\Services\DistanceCalculator;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -14,158 +15,121 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewTraslado extends ViewRecord
 {
     protected static string $resource = TrasladoResource::class;
+    protected static string $view     = 'filament.resources.traslado-resource.pages.view-traslado';
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+        $this->record->load([
+            'almacenOrigen',
+            'almacenDestino',
+            'transportista.user',
+            'creadoPor',
+            'aprobadoPor',
+            'items.producto',
+        ]);
+    }
+
+    /** Distancia en km entre origen y destino (desde tabla o Haversine). */
+    public function getDistanciaKm(): ?float
+    {
+        $a = $this->record->almacenOrigen;
+        $b = $this->record->almacenDestino;
+        if (!$a || !$b) return null;
+
+        return app(DistanceCalculator::class)->betweenAlmacenes($a, $b);
+    }
+
+    /** Costo estimado usando tarifa fija $0.50/km. */
+    public function getCostoEstimado(): ?float
+    {
+        $km = $this->getDistanciaKm();
+        return $km !== null ? round($km * 0.50, 2) : null;
+    }
 
     protected function getHeaderActions(): array
     {
         return [
             Actions\EditAction::make(),
 
-            Actions\Action::make('asignar_transporte')
-                ->label('Asignar Transporte')
+            Actions\Action::make('asignar_transportista')
+                ->label('Asignar Conductor')
                 ->icon('heroicon-m-truck')
                 ->color('info')
-                ->visible(fn() => $this->record->estado === 'pendiente')
+                ->visible(fn() => in_array($this->record->estado, ['sugerido', 'aprobado']) && !$this->record->transportista_id)
                 ->form([
                     Forms\Components\Select::make('transportista_id')
-                        ->label('Transportista')
-                        ->options(Transportista::where('estado', 'disponible')->pluck('nombre', 'id'))
-                        ->required(),
-                    Forms\Components\DatePicker::make('fecha_salida')
-                        ->label('Fecha de Salida')
-                        ->default(now())
+                        ->label('Conductor')
+                        ->options(
+                            Transportista::where('estado', 'disponible')
+                                ->with('user')
+                                ->get()
+                                ->mapWithKeys(fn($t) => [
+                                    $t->id => ($t->user?->name ?? '—') . ' — ' . ($t->vehiculo_placa ?? 'sin placa'),
+                                ])
+                        )
+                        ->searchable()
                         ->required(),
                 ])
                 ->action(function (array $data) {
-                    $this->record->update([
-                        'transportista_id' => $data['transportista_id'],
-                        'fecha_salida'     => $data['fecha_salida'],
-                        'estado'           => 'asignado',
-                        'asignado_por'     => auth()->id(),
-                    ]);
-                    Notification::make()->success()->title('Transporte asignado')->send();
-
-                    $destinoAdmins = User::role('admin_sucursal')
-                        ->where('almacen_id', $this->record->almacen_destino_id)
-                        ->get();
-                    if ($destinoAdmins->isNotEmpty()) {
-                        Notification::make()
-                            ->title('Traslado en camino: ' . $this->record->numero)
-                            ->body('Se ha asignado transporte. Llegará el ' . $data['fecha_salida'] . '.')
-                            ->info()
-                            ->sendToDatabase($destinoAdmins);
-                    }
-
+                    $this->record->update(['transportista_id' => $data['transportista_id']]);
+                    Notification::make()->success()->title('Conductor asignado')->send();
                     $this->record->refresh();
                 }),
 
-            Actions\Action::make('iniciar_transito')
-                ->label('Iniciar Tránsito')
-                ->icon('heroicon-m-play')
-                ->color('primary')
-                ->visible(fn() => $this->record->estado === 'asignado')
+            Actions\Action::make('aprobar')
+                ->label('Aprobar')
+                ->icon('heroicon-m-check')
+                ->color('info')
+                ->visible(fn() => $this->record->estado === 'sugerido')
                 ->requiresConfirmation()
-                ->modalHeading('¿Iniciar el tránsito?')
-                ->modalDescription('El traslado pasará a estado "En Tránsito".')
                 ->action(function () {
-                    $this->record->update(['estado' => 'en_transito']);
-                    Notification::make()->success()->title('Traslado en tránsito')->send();
-
-                    $destinoAdmins = User::role('admin_sucursal')
-                        ->where('almacen_id', $this->record->almacen_destino_id)
-                        ->get();
-                    if ($destinoAdmins->isNotEmpty()) {
-                        Notification::make()
-                            ->title('Traslado en tránsito: ' . $this->record->numero)
-                            ->body('El pedido está en camino a tu sucursal.')
-                            ->warning()
-                            ->sendToDatabase($destinoAdmins);
-                    }
-
+                    $this->record->update([
+                        'estado'           => 'aprobado',
+                        'aprobado_por'     => auth()->id(),
+                        'fecha_aprobacion' => now(),
+                    ]);
+                    Notification::make()->success()->title('Traslado aprobado')->send();
                     $this->record->refresh();
                 }),
 
-            Actions\Action::make('completar_entrega')
-                ->label('Completar Entrega')
+            Actions\Action::make('completar')
+                ->label('Completar')
                 ->icon('heroicon-m-check-circle')
                 ->color('success')
-                ->visible(fn() => $this->record->estado === 'en_transito')
-                ->form([
-                    Forms\Components\DatePicker::make('fecha_entrega_real')
-                        ->label('Fecha de Entrega')
-                        ->default(now())
-                        ->required(),
-                    Forms\Components\TextInput::make('cantidad_recibida')
-                        ->label('Cantidad Recibida')
-                        ->numeric()
-                        ->default(fn() => $this->record->cantidad)
-                        ->required()
-                        ->minValue(0)
-                        ->maxValue(fn() => $this->record->cantidad),
-                ])
-                ->action(function (array $data) {
-                    $inventario = InventarioAlmacen::where('producto_id', $this->record->producto_id)
-                        ->where('almacen_id', $this->record->almacen_destino_id)
-                        ->first();
-
-                    if ($inventario) {
-                        $inventario->increment('stock_actual', $data['cantidad_recibida']);
-                    } else {
-                        InventarioAlmacen::create([
-                            'producto_id'   => $this->record->producto_id,
-                            'almacen_id'    => $this->record->almacen_destino_id,
-                            'stock_actual'  => $data['cantidad_recibida'],
-                            'stock_minimo'  => 0,
-                            'stock_maximo'  => 999999,
-                            'punto_reorden' => 0,
-                        ]);
-                    }
-
+                ->visible(fn() => $this->record->estado === 'aprobado')
+                ->requiresConfirmation()
+                ->modalHeading('¿Marcar como completado?')
+                ->action(function () {
                     $this->record->update([
-                        'estado'             => 'entregado',
-                        'fecha_entrega_real' => $data['fecha_entrega_real'],
-                        'cantidad_recibida'  => $data['cantidad_recibida'],
+                        'estado'           => 'completado',
+                        'fecha_completado' => now(),
                     ]);
 
-                    Notification::make()
-                        ->success()
-                        ->title('Entrega completada')
-                        ->body('El inventario ha sido actualizado.')
-                        ->send();
-
-                    $destinoAdmins = User::role('admin_sucursal')
+                    $destAdmins = User::role('admin_sucursal')
                         ->where('almacen_id', $this->record->almacen_destino_id)
                         ->get();
-                    if ($destinoAdmins->isNotEmpty()) {
+                    if ($destAdmins->isNotEmpty()) {
                         Notification::make()
-                            ->title('Traslado entregado: ' . $this->record->numero)
-                            ->body('Stock actualizado. Confirma la recepción en tu panel.')
+                            ->title('Traslado completado: ' . $this->record->numero)
+                            ->body('El pedido llegó a tu sucursal.')
                             ->success()
-                            ->sendToDatabase($destinoAdmins);
+                            ->sendToDatabase($destAdmins);
                     }
 
+                    Notification::make()->success()->title('Traslado completado')->send();
                     $this->record->refresh();
                 }),
 
             Actions\Action::make('cancelar')
-                ->label('Cancelar Traslado')
+                ->label('Cancelar')
                 ->icon('heroicon-m-x-circle')
                 ->color('danger')
-                ->visible(fn() => !in_array($this->record->estado, ['entregado', 'cancelado']))
+                ->visible(fn() => !in_array($this->record->estado, ['completado', 'cancelado']))
                 ->requiresConfirmation()
                 ->modalHeading('¿Cancelar este traslado?')
-                ->modalDescription('Esta acción no se puede deshacer.')
-                ->form([
-                    Forms\Components\Textarea::make('motivo_cancelacion')
-                        ->label('Motivo de cancelación')
-                        ->required()
-                        ->minLength(10)
-                        ->rows(3),
-                ])
-                ->action(function (array $data) {
-                    $this->record->update([
-                        'estado'        => 'cancelado',
-                        'observaciones' => $data['motivo_cancelacion'],
-                    ]);
+                ->action(function () {
+                    $this->record->update(['estado' => 'cancelado']);
                     Notification::make()->warning()->title('Traslado cancelado')->send();
                     $this->record->refresh();
                 }),

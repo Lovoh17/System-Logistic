@@ -75,6 +75,11 @@ class Traslado extends Model
         return $this->belongsTo(User::class, 'asignado_por');
     }
 
+    public function aprobadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'aprobado_por');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(TrasladoItem::class);

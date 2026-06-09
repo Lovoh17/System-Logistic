@@ -70,6 +70,7 @@ class RedistribucionSucursales extends Page
                 'numero'             => Traslado::generarNumero(),
                 'almacen_origen_id'  => $sug['origen_id'],
                 'almacen_destino_id' => $sug['destino_id'],
+                'transportista_id'   => $sug['transportista_id'] ?? null,
                 'estado'             => 'sugerido',
                 'motivo'             => "Redistribución automática: \"{$sug['producto_nombre']}\" "
                     . "— déficit en {$sug['destino_nombre']} "
@@ -89,15 +90,30 @@ class RedistribucionSucursales extends Page
                     . "Costo est.: \${$sug['costo_estimado']}.",
             ]);
 
+            $conductor = $sug['transportista_nombre'] ?? null;
+            $placa     = $sug['transportista_placa']  ?? null;
+            $conductorTexto = $conductor
+                ? "Conductor: {$conductor}" . ($placa ? " ({$placa})" : '')
+                : 'Sin transportista disponible en origen';
+
             Notification::make()
                 ->success()
                 ->title("Traslado {$traslado->numero} creado")
                 ->body(
                     "{$sug['origen_nombre']} → {$sug['destino_nombre']}" . PHP_EOL .
                     "Producto: {$sug['producto_nombre']}" . PHP_EOL .
-                    "Cantidad: {$sug['cantidad_sugerida']} u. · {$sug['distancia_km']} km · \${$sug['costo_estimado']}"
+                    "Cantidad: {$sug['cantidad_sugerida']} u. · {$sug['distancia_km']} km · \${$sug['costo_estimado']}" . PHP_EOL .
+                    $conductorTexto
                 )
                 ->send();
+
+            if ($conductor === null) {
+                Notification::make()
+                    ->warning()
+                    ->title('Sin transportista en origen')
+                    ->body("No hay conductor disponible en {$sug['origen_nombre']}. Asigna uno manualmente en el traslado.")
+                    ->send();
+            }
 
             $destinoAdmins = User::role('admin_sucursal')
                 ->where('almacen_id', $sug['destino_id'])

@@ -1,212 +1,154 @@
-# 🚛 TraceLog — Sistema de Trazabilidad Logística
 
-> **Proyecto académico** | Laravel 11 + Filament v3 | Cadena de Suministro
+# TraceLog — Sistema de trazabilidad logística
 
----
+Proyecto académico construido con Laravel 11 y Filament v3 para gestión y trazabilidad de la cadena de suministro. Este repositorio contiene la aplicación backend y las configuraciones del panel administrativo.
 
-## 📋 Descripción del Sistema
+Resumen: TraceLog permite gestionar proveedores, clientes, productos, almacenes, pedidos (compra y venta), movimientos de inventario, envíos y seguimiento de eventos asociados a cada despacho.
 
-**TraceLog** es un sistema completo de trazabilidad logística diseñado para empresas comerciales y distribuidoras en El Salvador. Permite controlar toda la cadena de suministro:
+Requisitos
+---------
 
-| Módulo | Funcionalidad |
-|--------|---------------|
-| 🏭 **Proveedores** | Registro, calificación, condiciones comerciales |
-| 👥 **Clientes** | Base de clientes con crédito y tipos |
-| 📦 **Inventario** | Stock en tiempo real, alertas, kardex |
-| 🛒 **Pedidos de Compra** | Órdenes a proveedores con recepción |
-| 📋 **Pedidos de Venta** | Gestión completa de órdenes de clientes |
-| 🚚 **Transporte** | Flota propia y transportistas externos |
-| 📍 **Envíos y Tracking** | Trazabilidad en tiempo real con eventos |
-| 📊 **Dashboard** | KPIs, gráficos y alertas inteligentes |
+- PHP 8.2 o superior
+- Composer 2.x
+- MySQL 8.0+ o MariaDB 10.6+
+- Node.js 18+ y npm
+- Sistema operativo: Linux / macOS / Windows (se incluyen comandos orientativos para PowerShell)
 
----
+Instalación (PowerShell)
+------------------------
 
-## 🛠️ Requisitos
+1) Clonar el repositorio y entrar en la carpeta del proyecto
 
-- PHP **8.2+**
-- Composer **2.x**
-- MySQL **8.0+** o MariaDB **10.6+**
-- Node.js **18+** y NPM
-- Laravel **11.x**
-
----
-
-## 🚀 Instalación Paso a Paso
-
-### 1. Clonar / Descomprimir el proyecto
-
-```bash
-cd /var/www  # o tu directorio de proyectos
+```powershell
+git clone <url-del-repositorio>
+Set-Location C:\ruta\a\System-Logistic
 ```
 
-### 2. Instalar dependencias PHP
+2) Instalar dependencias PHP
 
-```bash
-composer install
+```powershell
+composer install --no-interaction --prefer-dist
 ```
 
-### 3. Configurar variables de entorno
+3) Preparar el archivo de entorno y generar la clave de aplicación
 
-```bash
-cp .env.example .env
+```powershell
+Copy-Item .env.example .env
 php artisan key:generate
 ```
 
-Editar `.env` con tus datos de base de datos:
+Edita `.env` con los datos de tu base de datos y otros ajustes (DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, MAIL settings, etc.).
 
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=tracelog_db
-DB_USERNAME=tu_usuario
-DB_PASSWORD=tu_contraseña
-```
+4) Crear la base de datos (ejemplo MySQL)
 
-### 4. Crear la base de datos
+Ejecuta en tu cliente MySQL:
 
 ```sql
 CREATE DATABASE tracelog_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-### 5. Ejecutar migraciones y seeders
+5) Ejecutar migraciones y seeders
 
-```bash
+```powershell
 php artisan migrate --seed
 ```
 
-### 6. Crear enlace de almacenamiento
+6) Crear enlace simbólico para storage
 
-```bash
+```powershell
 php artisan storage:link
 ```
 
-### 7. Instalar dependencias frontend
+7) Instalar dependencias frontend y compilar (opcional en desarrollo)
 
-```bash
+```powershell
 npm install
 npm run build
 ```
 
-### 8. Iniciar el servidor
+8) Iniciar servidor de desarrollo
 
-```bash
-php artisan serve
+```powershell
+php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Acceder a: **http://localhost:8000/admin**
+Accede al panel administrativo en: http://127.0.0.1:8000/admin
 
----
+Credenciales de ejemplo
+-----------------------
 
-## 🔐 Credenciales de Acceso
+En el seeder de ejemplo se incluyen usuarios de prueba. Valores típicos utilizados en desarrollo:
 
-| Usuario | Email | Contraseña |
-|---------|-------|------------|
-| Administrador | admin@tracelog.com | password |
-| Coordinador Logístico | logistica@tracelog.com | password |
-| Ejecutivo de Ventas | ventas@tracelog.com | password |
+- Administrador: admin@tracelog.com / password
+- Coordinador logístico: logistica@tracelog.com / password
+- Ejecutivo de ventas: ventas@tracelog.com / password
 
----
+Estructura general del proyecto
+-------------------------------
 
-## 🗄️ Estructura de la Base de Datos
+Contenido relevante del repositorio (rutas principales):
 
-```
-proveedores          ← Empresas que nos venden
-clientes             ← Empresas/personas a quienes vendemos
-categorias           ← Clasificación de productos
-productos            ← Catálogo con control de stock
-almacenes            ← Bodegas / centros de distribución
-pedidos_compra       ← Órdenes a proveedores
-pedidos_compra_items ← Líneas de cada OC
-pedidos_venta        ← Órdenes de clientes
-pedidos_venta_items  ← Líneas de cada OV
-transportistas       ← Flota y transportistas externos
-envios               ← Control de despachos
-seguimiento_envios   ← Historial de eventos de cada envío
-movimientos_inv.     ← Kardex completo de inventario
-```
+- `app/` — Código de la aplicación
+  - `app/Filament/` — Recursos, páginas y widgets del panel Filament
+  - `app/Http/` — Requests, controllers, middleware y respuestas personalizadas
+  - `app/Models/` — Modelos Eloquent (Producto, PedidoCompra, PedidoVenta, Envio, Traslado, etc.)
+  - `app/Observers/` — Observers para eventos de modelos
+  - `app/Services/` — Servicios reutilizables (Asiento contable, cálculo de distancias, etc.)
 
----
+- `bootstrap/` — Arranque de la aplicación
+- `config/` — Archivos de configuración (app, permission, telescope, etc.)
+- `database/` — Migrations y seeders
+- `public/` — Activos públicos (index.php, css, js, imágenes)
+- `resources/views/` — Vistas Blade si aplica
+- `routes/` — Rutas web, api, console y channels
+- `storage/` — Archivos generados, logs y caches
 
-## 📁 Estructura del Proyecto
+Modelos y dominio
+------------------
 
-```
-app/
-├── Filament/
-│   ├── Pages/
-│   │   └── Dashboard.php              ← Panel principal con KPIs
-│   ├── Resources/
-│   │   ├── ProveedorResource.php      ← CRUD Proveedores
-│   │   ├── ClienteResource.php        ← CRUD Clientes
-│   │   ├── ProductoResource.php       ← CRUD Productos + Stock
-│   │   ├── PedidoCompraResource.php   ← Órdenes de Compra
-│   │   ├── PedidoVentaResource.php    ← Órdenes de Venta
-│   │   ├── TransportistaResource.php  ← Flota de transporte
-│   │   └── EnvioResource.php          ← Envíos + Tracking
-│   └── Widgets/
-│       ├── EstadisticasWidget.php     ← KPIs principales
-│       ├── GraficoVentasWidget.php    ← Gráfico de tendencias
-│       ├── PedidosPendientesWidget.php
-│       ├── StockCriticoWidget.php
-│       └── EnviosActivosWidget.php
-├── Models/                             ← Modelos Eloquent
-├── Providers/
-│   └── Filament/
-│       └── AdminPanelProvider.php     ← Config del panel
-database/
-├── migrations/                        ← Estructura de BD
-└── seeders/
-    └── DatabaseSeeder.php             ← Datos de prueba SV
-```
+El proyecto contiene modelos que representan las entidades del dominio logístico:
 
----
+- `Producto`, `Categoria`, `Almacen`, `InventarioAlmacen`
+- `PedidoCompra`, `PedidoCompraItem`, `PedidoVenta`, `PedidoVentaItem`
+- `Proveedor`, `Cliente`, `DireccionCliente`
+- `Traslado`, `TrasladoItem`, `MovimientoInventario`
+- `Envio`, `SeguimientoEnvio`, `Transportista`, `DistanciaSucursal`
+- `AsientoContable`, `LineaAsiento`, `CuentaContable` (para contabilidad básica)
 
-## 📱 Funcionalidades Destacadas
+Funcionalidades principales
+--------------------------
 
-### Dashboard Inteligente
-- KPIs en tiempo real: ventas, envíos, stock crítico
-- Gráfico de ventas y entregas de los últimos 6 meses
-- Alertas de pedidos urgentes y stock bajo
-- Vista de envíos activos en tránsito
+- Gestión completa de proveedores, clientes y productos
+- Módulo de inventario con movimientos automáticos (kardex)
+- Pedidos de compra y venta con recepción/entrega parcial
+- Registro y seguimiento de envíos con eventos y geolocalización
+- Panel administrativo con recursos Filament y widgets para KPIs
+- Exportes a Excel y generación de PDFs
+- Registro de actividad y control de permisos (Spatie)
 
-### Gestión de Pedidos
-- Pedidos de compra con recepción parcial o total
-- Pedidos de venta con múltiples estados de workflow
-- Priorización: Normal, Alta, Urgente
-- Múltiples canales de venta
+Buenas prácticas y consideraciones
+---------------------------------
 
-### Trazabilidad Total de Envíos
-- Registro de eventos de seguimiento en tiempo real
-- Coordenadas GPS por envío
-- Foto de entrega y firma del receptor
-- Timeline completo del ciclo de vida del envío
+- Mantener las credenciales y secretos fuera del repositorio (.env no versionado)
+- Ejecutar migraciones en un entorno controlado y revisar seeders antes de correr en producción
+- Revisar configuraciones de correo, colas y almacenamiento para integrarlas con servicios reales en producción
 
-### Control de Inventario
-- Kardex automático con cada movimiento
-- Alertas de stock mínimo y máximo
-- 10 tipos de movimientos (compra, venta, ajuste, merma, etc.)
-- Control por lotes y fechas de vencimiento
+Tecnologías y dependencias destacadas
+------------------------------------
 
----
+- Laravel 11 (backend)
+- Filament v3 (panel administrativo)
+- Spatie packages (activity log, permissions)
+- Laravel Excel, DomPDF para exportes
+- Livewire y/o Alpine (según componentes usados en Filament)
 
-## 🎨 Tecnologías Utilizadas
+Licencia
+--------
 
-| Tecnología | Versión | Uso |
-|-----------|---------|-----|
-| Laravel | 11.x | Framework PHP backend |
-| Filament | 3.2 | Panel administrativo |
-| MySQL | 8.0+ | Base de datos principal |
-| Spatie Activity Log | 4.7 | Auditoría de cambios |
-| Spatie Permissions | 6.4 | Roles y permisos |
-| Laravel Excel | 3.1 | Exportación a Excel |
-| DomPDF | 2.2 | Generación de PDFs |
+Proyecto académico — uso educativo.
 
----
+Contacto
+--------
 
-## 📄 Licencia
+Para preguntas o contribuciones, abre un issue o contacta al autor del repositorio.
 
-Proyecto académico — Uso educativo.
-
----
-
-*Desarrollado para el estudio de Trazabilidad Logística en Cadenas de Suministro*

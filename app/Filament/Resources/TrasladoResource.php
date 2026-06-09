@@ -3,9 +3,10 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TrasladoResource\Pages;
-use App\Models\Traslado;
 use App\Models\Almacen;
 use App\Models\InventarioAlmacen;
+use App\Models\Traslado;
+use App\Models\Transportista;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
@@ -41,12 +42,34 @@ class TrasladoResource extends Resource
                     Forms\Components\Select::make('almacen_origen_id')
                         ->label('Sucursal Origen')
                         ->options(Almacen::where('activo', true)->pluck('nombre', 'id'))
-                        ->required()->searchable()->columnSpan(1),
+                        ->required()->searchable()->live()
+                        ->columnSpan(1),
 
                     Forms\Components\Select::make('almacen_destino_id')
                         ->label('Sucursal Destino')
                         ->options(Almacen::where('activo', true)->pluck('nombre', 'id'))
                         ->required()->searchable()->columnSpan(1),
+
+                    Forms\Components\Select::make('transportista_id')
+                        ->label('Transportista / Conductor')
+                        ->options(function (Forms\Get $get) {
+                            $origenId = $get('almacen_origen_id');
+                            $query = Transportista::with('user')
+                                ->where('estado', 'disponible');
+                            if ($origenId) {
+                                $query->where('almacen_id', $origenId);
+                            }
+                            return $query->get()
+                                ->mapWithKeys(fn($t) => [
+                                    $t->id => ($t->user?->name ?? '—')
+                                        . ' — ' . ($t->vehiculo_placa ?? 'sin placa')
+                                        . ($t->almacen_id === (int) $origenId ? '' : ' ⚠ otra sucursal'),
+                                ]);
+                        })
+                        ->searchable()
+                        ->nullable()
+                        ->helperText('Solo muestra transportistas disponibles. Se filtra por la sucursal origen.')
+                        ->columnSpan(1),
 
                     Forms\Components\Select::make('estado')
                         ->options([
@@ -144,6 +167,18 @@ class TrasladoResource extends Resource
                     Infolists\Components\TextEntry::make('almacenDestino.nombre')
                         ->label('Sucursal Destino')
                         ->icon('heroicon-m-building-storefront'),
+
+                    Infolists\Components\TextEntry::make('transportista.user.name')
+                        ->label('Conductor')
+                        ->icon('heroicon-m-user')
+                        ->placeholder('Sin asignar'),
+
+                    Infolists\Components\TextEntry::make('transportista.vehiculo_placa')
+                        ->label('Placa / Modelo')
+                        ->formatStateUsing(fn($state, $record) =>
+                            trim(($state ?? '—') . ' · ' . ($record->transportista?->vehiculo_modelo ?? ''))
+                        )
+                        ->placeholder('—'),
                 ]),
 
             Infolists\Components\Section::make('Productos')
@@ -218,6 +253,13 @@ class TrasladoResource extends Resource
                     ->label('Productos')
                     ->counts('items')
                     ->badge()->color('primary')->alignCenter(),
+
+                Tables\Columns\TextColumn::make('transportista.user.name')
+                    ->label('Conductor')
+                    ->searchable()
+                    ->description(fn($record) => $record->transportista?->vehiculo_placa)
+                    ->placeholder('Sin asignar')
+                    ->icon('heroicon-m-truck'),
 
                 Tables\Columns\TextColumn::make('creadoPor.name')
                     ->label('Creado por')
