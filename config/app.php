@@ -16,6 +16,10 @@ return [
     'service_id' => env('EMAILJS_SERVICE_ID'),
     'template_id' => env('EMAILJS_TEMPLATE_ID'),
 
+    'google' => [
+        'maps_key' => env('GOOGLE_MAPS_KEY'),
+    ],
+
     'providers' => [
         Illuminate\Auth\AuthServiceProvider::class,
         Illuminate\Broadcasting\BroadcastServiceProvider::class,

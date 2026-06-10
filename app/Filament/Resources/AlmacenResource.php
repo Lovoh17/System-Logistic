@@ -184,13 +184,8 @@ class AlmacenResource extends Resource
                     )),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ])
             ->defaultSort('nombre', 'asc')
             ->emptyStateIcon('heroicon-o-building-storefront')
@@ -203,6 +198,7 @@ class AlmacenResource extends Resource
         return [
             'index'  => Pages\ListAlmacenes::route('/'),
             'create' => Pages\CreateAlmacen::route('/create'),
+            'view'   => Pages\ViewAlmacen::route('/{record}'),
             'edit'   => Pages\EditAlmacen::route('/{record}/edit'),
         ];
     }

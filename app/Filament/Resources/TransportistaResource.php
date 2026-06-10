@@ -11,6 +11,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 
 class TransportistaResource extends Resource
 {
@@ -115,8 +117,8 @@ class TransportistaResource extends Resource
 
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Conductor')
-                    ->searchable()->sortable()
-                    ->description(fn($record) => $record->user?->email),
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('almacen.nombre')
                     ->label('Sucursal')
@@ -167,9 +169,77 @@ class TransportistaResource extends Resource
                     ->options(Almacen::pluck('nombre', 'id')),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist->schema([
+            Infolists\Components\Section::make('Conductor')
+                ->columns(3)
+                ->schema([
+                    Infolists\Components\TextEntry::make('codigo')
+                        ->badge()->color('gray'),
+
+                    Infolists\Components\TextEntry::make('user.name')
+                        ->label('Nombre'),
+
+                    Infolists\Components\TextEntry::make('user.email')
+                        ->label('Email'),
+
+                    Infolists\Components\TextEntry::make('almacen.nombre')
+                        ->label('Sucursal')->badge()->color('primary'),
+
+                    Infolists\Components\TextEntry::make('estado')
+                        ->badge()
+                        ->color(fn($record) => match($record->estado) {
+                            'disponible'    => 'success',
+                            'en_ruta'       => 'warning',
+                            'mantenimiento' => 'danger',
+                            default          => 'gray',
+                        }),
+                ]),
+
+            Infolists\Components\Section::make('Vehículo')
+                ->columns(4)
+                ->schema([
+                    Infolists\Components\TextEntry::make('vehiculo_tipo')
+                        ->label('Tipo')->badge()->color('info'),
+
+                    Infolists\Components\TextEntry::make('vehiculo_placa')
+                        ->label('Placa'),
+
+                    Infolists\Components\TextEntry::make('vehiculo_modelo')
+                        ->label('Modelo'),
+
+                    Infolists\Components\TextEntry::make('capacidad_kg')
+                        ->label('Cap. kg')
+                        ->suffix(' kg'),
+
+                    Infolists\Components\TextEntry::make('capacidad_m3')
+                        ->label('Cap. m³')
+                        ->suffix(' m³'),
+
+                    Infolists\Components\IconEntry::make('tiene_gps')
+                        ->label('GPS')->boolean(),
+
+                    Infolists\Components\IconEntry::make('tiene_refrigeracion')
+                        ->label('Refrigeración')->boolean(),
+                ]),
+
+            Infolists\Components\Section::make('Ubicación GPS')
+                ->columns(3)
+                ->schema([
+                    Infolists\Components\TextEntry::make('ubicacion_actual')
+                        ->label('Descripción'),
+
+                    Infolists\Components\TextEntry::make('latitud'),
+
+                    Infolists\Components\TextEntry::make('longitud'),
+                ]),
+        ]);
     }
 
     public static function getPages(): array
@@ -177,7 +247,9 @@ class TransportistaResource extends Resource
         return [
             'index'  => Pages\ListTransportistas::route('/'),
             'create' => Pages\CreateTransportista::route('/create'),
+            'view'   => Pages\ViewTransportista::route('/{record}'),
             'edit'   => Pages\EditTransportista::route('/{record}/edit'),
+
         ];
     }
 }

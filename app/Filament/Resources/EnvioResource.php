@@ -17,11 +17,11 @@ class EnvioResource extends Resource
 {
     protected static ?string $model = Envio::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-truck';
-    protected static ?string $navigationLabel = 'Envíos y Transporte';
-    protected static ?string $navigationGroup = 'Logística';
-    protected static ?int $navigationSort = 1;
-    protected static ?string $modelLabel = 'Envío';
+    protected static ?string $navigationIcon   = 'heroicon-o-truck';
+    protected static ?string $navigationLabel  = 'Envíos y Transporte';
+    protected static ?string $navigationGroup  = 'Logística';
+    protected static ?int    $navigationSort   = 1;
+    protected static ?string $modelLabel       = 'Envío';
     protected static ?string $pluralModelLabel = 'Envíos';
 
     public static function form(Form $form): Form
@@ -64,7 +64,10 @@ class EnvioResource extends Resource
 
                     Forms\Components\Select::make('transportista_id')
                         ->label('Transportista / Unidad')
-                        ->relationship('transportista', 'nombre')
+                        ->relationship('transportista', 'id')
+                        ->getOptionLabelFromRecordUsing(fn($record) =>
+                            ($record->user?->name ?? 'Sin nombre') . ' — ' . ($record->vehiculo_placa ?? 'sin placa')
+                        )
                         ->searchable()
                         ->preload()
                         ->columnSpan(2),
@@ -102,29 +105,16 @@ class EnvioResource extends Resource
                 ->columns(4)
                 ->schema([
                     Forms\Components\TextInput::make('peso_total_kg')
-                        ->label('Peso Total (kg)')
-                        ->numeric()
-                        ->step(0.001)
-                        ->columnSpan(1),
+                        ->label('Peso Total (kg)')->numeric()->step(0.001)->columnSpan(1),
 
                     Forms\Components\TextInput::make('volumen_total_m3')
-                        ->label('Volumen (m³)')
-                        ->numeric()
-                        ->step(0.001)
-                        ->columnSpan(1),
+                        ->label('Volumen (m³)')->numeric()->step(0.001)->columnSpan(1),
 
                     Forms\Components\TextInput::make('distancia_km')
-                        ->label('Distancia (km)')
-                        ->numeric()
-                        ->step(0.01)
-                        ->columnSpan(1),
+                        ->label('Distancia (km)')->numeric()->step(0.01)->columnSpan(1),
 
                     Forms\Components\TextInput::make('costo_envio')
-                        ->label('Costo de Envío ($)')
-                        ->numeric()
-                        ->prefix('$')
-                        ->default(0)
-                        ->columnSpan(1),
+                        ->label('Costo de Envío ($)')->numeric()->prefix('$')->default(0)->columnSpan(1),
                 ]),
 
             Forms\Components\Section::make('Entrega')
@@ -132,39 +122,28 @@ class EnvioResource extends Resource
                 ->columns(3)
                 ->schema([
                     Forms\Components\DateTimePicker::make('fecha_entrega_estimada')
-                        ->label('Entrega Estimada')
-                        ->columnSpan(1),
+                        ->label('Entrega Estimada')->columnSpan(1),
 
                     Forms\Components\DateTimePicker::make('fecha_entrega_real')
-                        ->label('Entrega Real')
-                        ->columnSpan(1),
+                        ->label('Entrega Real')->columnSpan(1),
 
                     Forms\Components\TextInput::make('numero_seguimiento')
-                        ->label('N° de Seguimiento')
-                        ->maxLength(50)
-                        ->columnSpan(1),
+                        ->label('N° de Seguimiento')->maxLength(50)->columnSpan(1),
 
                     Forms\Components\TextInput::make('firma_receptor')
-                        ->label('Recibido por')
-                        ->maxLength(150)
-                        ->columnSpan(1),
+                        ->label('Recibido por')->maxLength(150)->columnSpan(1),
 
                     Forms\Components\FileUpload::make('foto_entrega')
-                        ->label('Foto de Entrega')
-                        ->image()
-                        ->directory('entregas')
-                        ->columnSpan(2),
+                        ->label('Foto de Entrega')->image()->directory('entregas')->columnSpan(2),
 
                     Forms\Components\Textarea::make('observaciones')
-                        ->label('Observaciones')
-                        ->rows(3)
-                        ->columnSpanFull(),
+                        ->label('Observaciones')->rows(3)->columnSpanFull(),
 
                     Forms\Components\Textarea::make('motivo_fallo')
                         ->label('Motivo de Fallo (si aplica)')
                         ->rows(2)
                         ->columnSpanFull()
-                        ->visible(fn (Forms\Get $get) => in_array($get('estado'), ['fallido', 'devuelto'])),
+                        ->visible(fn(Forms\Get $get) => in_array($get('estado'), ['fallido', 'devuelto'])),
                 ]),
 
             Forms\Components\Section::make('Seguimiento GPS')
@@ -173,13 +152,9 @@ class EnvioResource extends Resource
                 ->collapsed()
                 ->schema([
                     Forms\Components\TextInput::make('latitud_actual')
-                        ->label('Latitud')
-                        ->numeric()
-                        ->step(0.00000001),
+                        ->label('Latitud')->numeric()->step(0.00000001),
                     Forms\Components\TextInput::make('longitud_actual')
-                        ->label('Longitud')
-                        ->numeric()
-                        ->step(0.00000001),
+                        ->label('Longitud')->numeric()->step(0.00000001),
                 ]),
         ]);
     }
@@ -190,22 +165,19 @@ class EnvioResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('numero')
                     ->label('N° Envío')
-                    ->searchable()
-                    ->sortable()
-                    ->badge()
-                    ->color('primary'),
+                    ->searchable()->sortable()
+                    ->badge()->color('primary'),
 
                 Tables\Columns\TextColumn::make('pedidoVenta.numero')
                     ->label('Pedido')
                     ->searchable()
-                    ->badge()
-                    ->color('gray'),
+                    ->badge()->color('gray'),
 
                 Tables\Columns\TextColumn::make('pedidoVenta.cliente.nombre')
                     ->label('Cliente')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('transportista.nombre')
+                Tables\Columns\TextColumn::make('transportista.user.name')
                     ->label('Transportista')
                     ->searchable()
                     ->toggleable(),
@@ -216,14 +188,11 @@ class EnvioResource extends Resource
 
                 Tables\Columns\TextColumn::make('fecha_programada')
                     ->label('Programado')
-                    ->date('d/m/Y')
-                    ->sortable(),
+                    ->date('d/m/Y')->sortable(),
 
                 Tables\Columns\TextColumn::make('fecha_entrega_estimada')
                     ->label('Est. Entrega')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->toggleable(),
+                    ->dateTime('d/m/Y H:i')->sortable()->toggleable(),
 
                 Tables\Columns\BadgeColumn::make('estado')
                     ->colors([
@@ -238,8 +207,7 @@ class EnvioResource extends Resource
                     ]),
 
                 Tables\Columns\TextColumn::make('costo_envio')
-                    ->label('Costo')
-                    ->money('USD')
+                    ->label('Costo')->money('USD')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
@@ -257,7 +225,10 @@ class EnvioResource extends Resource
 
                 Tables\Filters\SelectFilter::make('transportista_id')
                     ->label('Transportista')
-                    ->relationship('transportista', 'nombre'),
+                    ->relationship('transportista', 'id')
+                    ->getOptionLabelFromRecordUsing(fn($record) =>
+                        ($record->user?->name ?? 'Sin nombre') . ' — ' . ($record->vehiculo_placa ?? 'sin placa')
+                    ),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -278,8 +249,7 @@ class EnvioResource extends Resource
                             ->default(now())
                             ->required(),
                         Forms\Components\Textarea::make('descripcion')
-                            ->label('Descripción')
-                            ->rows(2),
+                            ->label('Descripción')->rows(2),
                     ])
                     ->action(function (Envio $record, array $data) {
                         $record->seguimientos()->create([
@@ -298,9 +268,22 @@ class EnvioResource extends Resource
                 ->columns(4)
                 ->schema([
                     Infolists\Components\TextEntry::make('numero')->badge()->color('primary'),
-                    Infolists\Components\TextEntry::make('estado')->badge()->color(fn($record) => $record->estado_color),
-                    Infolists\Components\TextEntry::make('pedidoVenta.numero')->label('Pedido')->badge()->color('gray'),
-                    Infolists\Components\TextEntry::make('transportista.nombre')->label('Transportista'),
+                    Infolists\Components\TextEntry::make('estado')
+                        ->badge()
+                        ->color(fn($record) => match($record->estado) {
+                            'programado'     => 'gray',
+                            'en_preparacion' => 'warning',
+                            'despachado'     => 'info',
+                            'en_transito'    => 'primary',
+                            'en_destino'     => 'indigo',
+                            'entregado'      => 'success',
+                            'fallido'        => 'danger',
+                            default           => 'gray',
+                        }),
+                    Infolists\Components\TextEntry::make('pedidoVenta.numero')
+                        ->label('Pedido')->badge()->color('gray'),
+                    Infolists\Components\TextEntry::make('transportista.user.name')
+                        ->label('Transportista'),
                 ]),
 
             Infolists\Components\Section::make('Ruta')

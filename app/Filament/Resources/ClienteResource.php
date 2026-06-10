@@ -196,18 +196,13 @@ class ClienteResource extends Resource
                     ]),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
                 Tables\Actions\Action::make('nuevo_pedido')
                     ->label('Nueva OV')
                     ->icon('heroicon-o-shopping-cart')
                     ->color('success')
                     ->url(fn($record) => route('filament.admin.resources.pedido-ventas.create') . '?cliente_id=' . $record->id),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ])
             ->defaultSort('nombre');
     }
@@ -217,6 +212,7 @@ class ClienteResource extends Resource
         return [
             'index'  => Pages\ListCliente::route('/'),
             'create' => Pages\CreateCliente::route('/create'),
+            'view'   => Pages\ViewCliente::route('/{record}'),
             'edit'   => Pages\EditCliente::route('/{record}/edit'),
         ];
     }

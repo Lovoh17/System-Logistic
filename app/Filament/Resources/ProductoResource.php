@@ -343,22 +343,10 @@ class ProductoResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('ver_stock')
-                ->label('Ver Stock')
-                ->icon('heroicon-o-chart-bar')
-                ->color('info')
-                ->modalHeading(fn($record) => "Stock de {$record->nombre}")
-                ->modalContent(function ($record) {
-                    $stocks = $record->inventarioAlmacen()
-                        ->with('almacen')
-                        ->get();
-                    
-                    return view('filament.Modals.ver-stock', [
-                        'stocks' => $stocks,
-                        'record' => $record,
-                    ]);
-                })
-                ->modalSubmitAction(false)
-                ->modalCancelActionLabel('Cerrar'),
+                    ->label('Ver Stock')
+                    ->icon('heroicon-o-chart-bar')
+                    ->color('info')
+                    ->url(fn($record) => static::getUrl('stock', ['record' => $record])),
                         ])
                         ->headerActions([
                             Tables\Actions\Action::make('exportar_general')
@@ -378,7 +366,6 @@ class ProductoResource extends Resource
                         ])
                         ->bulkActions([
                             Tables\Actions\BulkActionGroup::make([
-                                Tables\Actions\DeleteBulkAction::make(),
                                 Tables\Actions\BulkAction::make('actualizar_stock_minimo')
                                     ->label('Actualizar Stock Mínimo')
                                     ->icon('heroicon-m-pencil')
@@ -432,6 +419,8 @@ class ProductoResource extends Resource
         return [
             'index'  => Pages\ListProducto::route('/'),
             'create' => Pages\CreateProducto::route('/create'),
+            'view'   => Pages\ViewProducto::route('/{record}'),
+            'stock'  => Pages\ViewStockProducto::route('/{record}/stock'),
             'edit'   => Pages\EditProducto::route('/{record}/edit'),
         ];
     }

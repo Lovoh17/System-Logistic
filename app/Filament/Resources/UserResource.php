@@ -144,15 +144,6 @@ class UserResource extends Resource
                 Tables\Actions\EditAction::make()
                     ->label('Editar')
                     ->icon('heroicon-m-pencil-square'),
-                Tables\Actions\DeleteAction::make()
-                    ->label('Eliminar')
-                    ->icon('heroicon-m-trash')
-                    ->requiresConfirmation(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ])
             ->defaultSort('created_at', 'desc');
     }
@@ -167,9 +158,10 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListUsers::route('/'),
+            'index'  => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
+            'view'   => Pages\ViewUser::route('/{record}'),
+            'edit'   => Pages\EditUser::route('/{record}/edit'),
         ];
     }
 }
