@@ -496,3 +496,41 @@
             .strip-item { padding: 1.5rem 2rem; }
             nav { display: none; }
         }
+/* Agrupamiento */
+.panels-group { margin-bottom: 2.5rem; }
+.group-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+}
+.group-admin { background: #EEEDFE; color: #3C3489; }
+.group-ops   { background: #E1F5EE; color: #085041; }
+
+/* Grid 2 columnas para el área operativa */
+.panels-grid--2 { grid-template-columns: repeat(2, 1fr); }
+.panels-grid--3 { grid-template-columns: repeat(3, 1fr); }
+
+/* Etiqueta de rol encima del título */
+.panel-role {
+    font-size: 11px;
+    color: var(--muted); /* usa tu variable de color secundario */
+    margin-bottom: 4px;
+    font-weight: 400;
+}
+
+/* Contaduría — purple */
+.accent-purple  { background: #7F77DD; }
+.icon-purple    { background: #EEEDFE; color: #534AB7; }
+.dot-purple     { background: #7F77DD; }
+.btn-purple     { background: #EEEDFE; color: #3C3489; border-color: #AFA9EC; }
+
+/* Sucursales — teal */
+.accent-teal    { background: #1D9E75; }
+.icon-teal      { background: #E1F5EE; color: #0F6E56; }
+.dot-teal       { background: #1D9E75; }
+.btn-teal       { background: #E1F5EE; color: #085041; border-color: #5DCAA5; }

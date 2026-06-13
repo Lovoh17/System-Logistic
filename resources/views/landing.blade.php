@@ -94,6 +94,7 @@
     <div class="divider"></div>
 
     <!-- Panels -->
+    <!-- Panels -->
     <section class="panels-section" id="paneles">
         <p class="section-label">Acceso al sistema</p>
         <h2 class="section-title">Selecciona tu área de trabajo</h2>
@@ -102,95 +103,142 @@
             y trabaja desde el entorno que corresponde a tus responsabilidades.
         </p>
 
-        <div class="panels-grid">
+        <!-- Área Administrativa -->
+        <div class="panels-group">
+            <span class="group-label group-admin">Área administrativa</span>
+            <div class="panels-grid panels-grid--3">
 
-            <!-- Administración -->
-            <div class="panel-card fade-up delay-1">
-                <div class="panel-card-accent accent-green"></div>
-                <div class="panel-card-body">
-                    <div class="panel-icon icon-green">
-                        <svg viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                        </svg>
+                <!-- Administración -->
+                <div class="panel-card fade-up delay-1">
+                    <div class="panel-card-accent accent-green"></div>
+                    <div class="panel-card-body">
+                        <div class="panel-icon icon-green">
+                            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        </div>
+                        <p class="panel-role">Administrador</p>
+                        <h3 class="panel-title">Administración</h3>
+                        <p class="panel-desc">Control total del negocio. Gestión de recursos, reportes y configuración del sistema.</p>
+                        <ul class="panel-features">
+                            <li><span class="feat-dot dot-green"></span>Gestión de inventario y stock</li>
+                            <li><span class="feat-dot dot-green"></span>Proveedores y compras</li>
+                            <li><span class="feat-dot dot-green"></span>Clientes y pedidos de venta</li>
+                            <li><span class="feat-dot dot-green"></span>Reportes y trazabilidad</li>
+                            <li><span class="feat-dot dot-green"></span>Configuración del sistema</li>
+                        </ul>
+                        <a href="/admin/login" class="panel-btn btn-green">
+                            Acceder a Administración
+                            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        </a>
                     </div>
-                    <h3 class="panel-title">Administración</h3>
-                    <p class="panel-desc">Control total del negocio. Gestión de recursos, reportes y configuración del sistema.</p>
-                    <ul class="panel-features">
-                        <li><span class="feat-dot dot-green"></span>Gestión de inventario y stock</li>
-                        <li><span class="feat-dot dot-green"></span>Proveedores y compras</li>
-                        <li><span class="feat-dot dot-green"></span>Clientes y pedidos de venta</li>
-                        <li><span class="feat-dot dot-green"></span>Reportes y trazabilidad</li>
-                        <li><span class="feat-dot dot-green"></span>Configuración del sistema</li>
-                    </ul>
-                    <a href="/admin/login" class="panel-btn btn-green">
-                        Acceder a Administración
-                        <svg viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                        </svg>
-                    </a>
                 </div>
-            </div>
 
-            <!-- Punto de Venta -->
-            <div class="panel-card fade-up delay-2">
-                <div class="panel-card-accent accent-blue"></div>
-                <div class="panel-card-body">
-                    <div class="panel-icon icon-blue">
-                        <svg viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                        </svg>
+                <!-- Contaduría -->
+                <div class="panel-card fade-up delay-2">
+                    <div class="panel-card-accent accent-purple"></div>
+                    <div class="panel-card-body">
+                        <div class="panel-icon icon-purple">
+                            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        </div>
+                        <p class="panel-role">Contador</p>
+                        <h3 class="panel-title">Contaduría</h3>
+                        <p class="panel-desc">Gestión financiera y contable. Control de cuentas, balances y reportes fiscales.</p>
+                        <ul class="panel-features">
+                            <li><span class="feat-dot dot-purple"></span>Cuentas por pagar y cobrar</li>
+                            <li><span class="feat-dot dot-purple"></span>Balances y estados financieros</li>
+                            <li><span class="feat-dot dot-purple"></span>Reportes fiscales</li>
+                            <li><span class="feat-dot dot-purple"></span>Conciliación de cuentas</li>
+                            <li><span class="feat-dot dot-purple"></span>Auditoría interna</li>
+                        </ul>
+                        <a href="/contador/login" class="panel-btn btn-purple">
+                            Acceder a Contaduría
+                            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        </a>
                     </div>
-                    <h3 class="panel-title">Punto de Venta</h3>
-                    <p class="panel-desc">Interfaz de caja optimizada para velocidad. Procesa ventas y gestiona clientes con agilidad.</p>
-                    <ul class="panel-features">
-                        <li><span class="feat-dot dot-blue"></span>Ventas directas en caja</li>
-                        <li><span class="feat-dot dot-blue"></span>Búsqueda rápida de productos</li>
-                        <li><span class="feat-dot dot-blue"></span>Gestión de clientes</li>
-                        <li><span class="feat-dot dot-blue"></span>Historial de pedidos</li>
-                        <li><span class="feat-dot dot-blue"></span>Control de stock por sucursal</li>
-                    </ul>
-                    <a href="/ventas/login" class="panel-btn btn-blue">
-                        Acceder a Punto de Venta
-                        <svg viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                        </svg>
-                    </a>
                 </div>
-            </div>
 
-            <!-- Logística -->
-            <div class="panel-card fade-up delay-3">
-                <div class="panel-card-accent accent-amber"></div>
-                <div class="panel-card-body">
-                    <div class="panel-icon icon-amber">
-                        <svg viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
+                <!-- Sucursales -->
+                <div class="panel-card fade-up delay-3">
+                    <div class="panel-card-accent accent-teal"></div>
+                    <div class="panel-card-body">
+                        <div class="panel-icon icon-teal">
+                            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </div>
+                        <p class="panel-role">Administrador de sucursal</p>
+                        <h3 class="panel-title">Sucursales</h3>
+                        <p class="panel-desc">Supervisión y control de operaciones por sede. Gestión local de inventario y personal.</p>
+                        <ul class="panel-features">
+                            <li><span class="feat-dot dot-teal"></span>Stock por sucursal</li>
+                            <li><span class="feat-dot dot-teal"></span>Gestión de personal local</li>
+                            <li><span class="feat-dot dot-teal"></span>Pedidos y transferencias</li>
+                            <li><span class="feat-dot dot-teal"></span>Reportes por sede</li>
+                            <li><span class="feat-dot dot-teal"></span>Control de apertura/cierre</li>
+                        </ul>
+                        <a href="/sucursales/login" class="panel-btn btn-teal">
+                            Acceder a Sucursales
+                            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        </a>
                     </div>
-                    <h3 class="panel-title">Logística</h3>
-                    <p class="panel-desc">Supervisión de operaciones de transporte y entrega. Seguimiento en tiempo real de la flota.</p>
-                    <ul class="panel-features">
-                        <li><span class="feat-dot dot-amber"></span>Mapa de transportistas GPS</li>
-                        <li><span class="feat-dot dot-amber"></span>Control de envíos y entregas</li>
-                        <li><span class="feat-dot dot-amber"></span>Trazabilidad de pedidos</li>
-                        <li><span class="feat-dot dot-amber"></span>Gestión de flota vehicular</li>
-                        <li><span class="feat-dot dot-amber"></span>Registro de seguimiento</li>
-                    </ul>
-                    <a href="/logistica/login" class="panel-btn btn-amber">
-                        Acceder a Logística
-                        <svg viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                        </svg>
-                    </a>
                 </div>
-            </div>
 
+            </div>
+        </div>
+
+        <!-- Área Operativa -->
+        <div class="panels-group">
+            <span class="group-label group-ops">Área operativa</span>
+            <div class="panels-grid panels-grid--2">
+
+                <!-- Punto de Venta -->
+                <div class="panel-card fade-up delay-1">
+                    <div class="panel-card-accent accent-blue"></div>
+                    <div class="panel-card-body">
+                        <div class="panel-icon icon-blue">
+                            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        </div>
+                        <p class="panel-role">Cajero</p>
+                        <h3 class="panel-title">Punto de Venta</h3>
+                        <p class="panel-desc">Interfaz de caja optimizada para velocidad. Procesa ventas y gestiona clientes con agilidad.</p>
+                        <ul class="panel-features">
+                            <li><span class="feat-dot dot-blue"></span>Ventas directas en caja</li>
+                            <li><span class="feat-dot dot-blue"></span>Búsqueda rápida de productos</li>
+                            <li><span class="feat-dot dot-blue"></span>Gestión de clientes</li>
+                            <li><span class="feat-dot dot-blue"></span>Historial de pedidos</li>
+                            <li><span class="feat-dot dot-blue"></span>Control de stock por sucursal</li>
+                        </ul>
+                        <a href="/ventas/login" class="panel-btn btn-blue">
+                            Acceder a Punto de Venta
+                            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Logística -->
+                <div class="panel-card fade-up delay-2">
+                    <div class="panel-card-accent accent-amber"></div>
+                    <div class="panel-card-body">
+                        <div class="panel-icon icon-amber">
+                            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        </div>
+                        <p class="panel-role">Operador logístico</p>
+                        <h3 class="panel-title">Logística</h3>
+                        <p class="panel-desc">Supervisión de operaciones de transporte y entrega. Seguimiento en tiempo real de la flota.</p>
+                        <ul class="panel-features">
+                            <li><span class="feat-dot dot-amber"></span>Mapa de transportistas GPS</li>
+                            <li><span class="feat-dot dot-amber"></span>Control de envíos y entregas</li>
+                            <li><span class="feat-dot dot-amber"></span>Trazabilidad de pedidos</li>
+                            <li><span class="feat-dot dot-amber"></span>Gestión de flota vehicular</li>
+                            <li><span class="feat-dot dot-amber"></span>Registro de seguimiento</li>
+                        </ul>
+                        <a href="/logistica/login" class="panel-btn btn-amber">
+                            Acceder a Logística
+                            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </section>
-
     <!-- Strip de métricas -->
     <div class="strip">
         <div class="strip-inner">

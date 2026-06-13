@@ -147,7 +147,7 @@
                                 </span>
                                     @if($transportista->ultima_ubicacion_at)
                                         <p class="text-xs text-gray-400 mt-1">
-                                            {{ $transportista->ultima_ubicacion_at->diffForHumans() }}
+                                            {{ \Carbon\Carbon::parse($transportista->ultima_ubicacion_at)->diffForHumans() }}
                                         </p>
                                     @endif
                                 </div>
