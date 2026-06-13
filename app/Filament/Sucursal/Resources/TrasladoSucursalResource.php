@@ -4,14 +4,13 @@ namespace App\Filament\Sucursal\Resources;
 
 use App\Filament\Sucursal\Resources\TrasladoSucursalResource\Pages;
 use App\Models\Almacen;
-use App\Models\InventarioAlmacen;
-use App\Models\Traslado;
+use App\Models\Producto;
 use App\Models\Transportista;
+use App\Models\Traslado;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -21,18 +20,24 @@ class TrasladoSucursalResource extends Resource
 {
     protected static ?string $model = Traslado::class;
 
-    protected static ?string $navigationIcon   = 'heroicon-o-arrow-path';
-    protected static ?string $navigationLabel  = 'Traslados';
-    protected static ?string $navigationGroup  = 'Traslados';
-    protected static ?int    $navigationSort   = 1;
-    protected static ?string $modelLabel       = 'Traslado';
+    protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
+
+    protected static ?string $navigationLabel = 'Traslados';
+
+    protected static ?string $navigationGroup = 'Traslados';
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $modelLabel = 'Traslado';
+
     protected static ?string $pluralModelLabel = 'Traslados';
 
     public static function getEloquentQuery(): Builder
     {
         $id = auth()->user()?->almacen_id;
+
         return parent::getEloquentQuery()
-            ->where(fn($q) => $q->where('almacen_origen_id', $id)->orWhere('almacen_destino_id', $id));
+            ->where(fn ($q) => $q->where('almacen_origen_id', $id)->orWhere('almacen_destino_id', $id));
     }
 
     public static function form(Form $form): Form
@@ -43,7 +48,7 @@ class TrasladoSucursalResource extends Resource
             Forms\Components\Section::make('Datos del Traslado')->columns(3)->schema([
                 Forms\Components\TextInput::make('numero')
                     ->label('N° Traslado')
-                    ->default(fn() => Traslado::generarNumero())
+                    ->default(fn () => Traslado::generarNumero())
                     ->disabled()->dehydrated()->required()->columnSpan(1),
 
                 Forms\Components\Select::make('almacen_origen_id')
@@ -66,8 +71,8 @@ class TrasladoSucursalResource extends Resource
                             ->where('estado', 'disponible')
                             ->where('almacen_id', $almacenId)
                             ->get()
-                            ->mapWithKeys(fn($t) => [
-                                $t->id => ($t->user?->name ?? '—') . ' — ' . ($t->vehiculo_placa ?? 'sin placa'),
+                            ->mapWithKeys(fn ($t) => [
+                                $t->id => ($t->user?->name ?? '—').' — '.($t->vehiculo_placa ?? 'sin placa'),
                             ]);
                     })
                     ->searchable()
@@ -89,7 +94,7 @@ class TrasladoSucursalResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('producto_id')
                             ->label('Producto')
-                            ->options(\App\Models\Producto::activo()->pluck('nombre', 'id'))
+                            ->options(Producto::activo()->pluck('nombre', 'id'))
                             ->required()->searchable()->columnSpan(1),
 
                         Forms\Components\TextInput::make('cantidad_sugerida')
@@ -109,14 +114,14 @@ class TrasladoSucursalResource extends Resource
                 Infolists\Components\TextEntry::make('numero')
                     ->label('N° Traslado')->badge()->color('primary'),
                 Infolists\Components\TextEntry::make('estado')->badge()
-                    ->color(fn($state) => match($state) {
-                        'sugerido'   => 'warning',
-                        'aprobado'   => 'info',
+                    ->color(fn ($state) => match ($state) {
+                        'sugerido' => 'warning',
+                        'aprobado' => 'info',
                         'completado' => 'success',
-                        'cancelado'  => 'danger',
-                        default      => 'gray',
+                        'cancelado' => 'danger',
+                        default => 'gray',
                     })
-                    ->formatStateUsing(fn($state) => ucfirst($state)),
+                    ->formatStateUsing(fn ($state) => ucfirst($state)),
                 Infolists\Components\TextEntry::make('almacenOrigen.nombre')
                     ->label('Origen')->icon('heroicon-m-building-storefront'),
                 Infolists\Components\TextEntry::make('almacenDestino.nombre')
@@ -128,8 +133,7 @@ class TrasladoSucursalResource extends Resource
 
                 Infolists\Components\TextEntry::make('transportista.vehiculo_placa')
                     ->label('Placa / Modelo')
-                    ->formatStateUsing(fn($state, $record) =>
-                        trim(($state ?? '—') . ' · ' . ($record->transportista?->vehiculo_modelo ?? ''))
+                    ->formatStateUsing(fn ($state, $record) => trim(($state ?? '—').' · '.($record->transportista?->vehiculo_modelo ?? ''))
                     )
                     ->placeholder('—'),
                 Infolists\Components\TextEntry::make('motivo')->label('Motivo')->columnSpanFull(),
@@ -168,7 +172,7 @@ class TrasladoSucursalResource extends Resource
                 Tables\Columns\TextColumn::make('transportista.user.name')
                     ->label('Conductor')
                     ->searchable()
-                    ->description(fn($record) => $record->transportista?->vehiculo_placa)
+                    ->description(fn ($record) => $record->transportista?->vehiculo_placa)
                     ->placeholder('Sin asignar')
                     ->icon('heroicon-m-truck'),
 
@@ -179,66 +183,27 @@ class TrasladoSucursalResource extends Resource
                     ->label('Fecha')->date('d/m/Y')->sortable(),
 
                 Tables\Columns\TextColumn::make('estado')->badge()
-                    ->color(fn($state) => match($state) {
-                        'sugerido'   => 'warning',
-                        'aprobado'   => 'info',
+                    ->color(fn ($state) => match ($state) {
+                        'sugerido' => 'warning',
+                        'aprobado' => 'info',
                         'completado' => 'success',
-                        'cancelado'  => 'danger',
-                        default      => 'gray',
+                        'cancelado' => 'danger',
+                        default => 'gray',
                     })
-                    ->formatStateUsing(fn($state) => ucfirst($state)),
+                    ->formatStateUsing(fn ($state) => ucfirst($state)),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('estado')->options([
-                    'sugerido'   => 'Sugerido',
-                    'aprobado'   => 'Aprobado',
+                    'sugerido' => 'Sugerido',
+                    'aprobado' => 'Aprobado',
                     'completado' => 'Completado',
-                    'cancelado'  => 'Cancelado',
+                    'cancelado' => 'Cancelado',
                 ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make()
-                    ->visible(fn($record) => $record->estado === 'sugerido'),
-                Tables\Actions\Action::make('completar')
-                    ->label('Completar')
-                    ->icon('heroicon-m-check-circle')->color('success')
-                    ->visible(fn($record) => $record->estado === 'aprobado')
-                    ->modalHeading('Completar Traslado')
-                    ->modalWidth('lg')
-                    ->form(fn($record) => $record->items->flatMap(fn($item, $i) => [
-                        Forms\Components\Hidden::make("items.{$i}.item_id")->default($item->id),
-                        Forms\Components\Placeholder::make("items.{$i}.producto_nombre")
-                            ->label($item->producto->nombre ?? '—')
-                            ->content('Sugerido: ' . number_format($item->cantidad_sugerida, 3)),
-                        Forms\Components\TextInput::make("items.{$i}.cantidad_real")
-                            ->label('Cantidad real recibida')->numeric()->required()->minValue(0)
-                            ->default($item->cantidad_sugerida)->step(0.001),
-                    ])->values()->toArray())
-                    ->action(function($record, array $data) {
-                        foreach ($data['items'] ?? [] as $itemData) {
-                            $item = \App\Models\TrasladoItem::find($itemData['item_id']);
-                            if (!$item) continue;
-                            $cantReal = floatval($itemData['cantidad_real']);
-                            $item->update(['cantidad_real' => $cantReal]);
-
-                            $inv = InventarioAlmacen::firstOrCreate(
-                                ['producto_id' => $item->producto_id, 'almacen_id' => $record->almacen_destino_id],
-                                ['stock_actual' => 0, 'stock_minimo' => 0, 'stock_maximo' => 999999, 'punto_reorden' => 0]
-                            );
-                            $inv->increment('stock_actual', $cantReal);
-                        }
-                        $record->update(['estado' => 'completado', 'fecha_completado' => now()]);
-                        Notification::make()->success()->title('Traslado completado. Inventario actualizado.')->send();
-                    }),
-                Tables\Actions\Action::make('cancelar')
-                    ->label('Cancelar')->icon('heroicon-m-x-circle')->color('danger')
-                    ->visible(fn($record) => !in_array($record->estado, ['completado', 'cancelado']))
-                    ->requiresConfirmation()
-                    ->action(function($record) {
-                        $record->update(['estado' => 'cancelado']);
-                        Notification::make()->success()->title('Traslado cancelado')->send();
-                    }),
+                    ->visible(fn ($record) => $record->estado === 'sugerido'),
             ])
             ->headerActions([Tables\Actions\CreateAction::make()])
             ->defaultSort('created_at', 'desc');
@@ -247,10 +212,10 @@ class TrasladoSucursalResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListTrasladosSucursal::route('/'),
+            'index' => Pages\ListTrasladosSucursal::route('/'),
             'create' => Pages\CreateTrasladoSucursal::route('/create'),
-            'view'   => Pages\ViewTrasladoSucursal::route('/{record}'),
-            'edit'   => Pages\EditTrasladoSucursal::route('/{record}/edit'),
+            'view' => Pages\ViewTrasladoSucursal::route('/{record}'),
+            'edit' => Pages\EditTrasladoSucursal::route('/{record}/edit'),
         ];
     }
 }

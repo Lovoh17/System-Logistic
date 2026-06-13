@@ -2,19 +2,25 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Logistica\DashboardLogistica;
+use App\Filament\Pages\Logistica\RedistribucionSucursales;
 use App\Filament\Pages\RecomendacionesCompra;
-use Filament\Panel;
-use Filament\PanelProvider;
+use App\Filament\Resources\EnvioResource;
+use App\Filament\Resources\PedidoCompraResource;
+use App\Filament\Resources\PedidoVentaResource;
+use App\Filament\Resources\TransportistaResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Illuminate\Cookie\Middleware\EncryptCookies;
+use Filament\Panel;
+use Filament\PanelProvider;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Session\Middleware\AuthenticateSession;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\AuthenticateSession;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class LogisticaPanelProvider extends PanelProvider
 {
@@ -39,15 +45,15 @@ class LogisticaPanelProvider extends PanelProvider
                 'Reportes',
             ])
             ->pages([
-                \App\Filament\Pages\Logistica\DashboardLogistica::class,
-                \App\Filament\Pages\Logistica\RedistribucionSucursales::class,
+                DashboardLogistica::class,
+                RedistribucionSucursales::class,
                 RecomendacionesCompra::class,
             ])
             ->resources([
-                \App\Filament\Resources\PedidoCompraResource::class,
-                \App\Filament\Resources\PedidoVentaResource::class,
-                \App\Filament\Resources\TransportistaResource::class,
-                \App\Filament\Resources\EnvioResource::class,
+                PedidoCompraResource::class,
+                PedidoVentaResource::class,
+                TransportistaResource::class,
+                EnvioResource::class,
             ])
             ->middleware([
                 EncryptCookies::class,

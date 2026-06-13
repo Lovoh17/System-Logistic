@@ -9,7 +9,6 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -19,11 +18,16 @@ class PedidoVentaSucursalResource extends Resource
 {
     protected static ?string $model = PedidoVenta::class;
 
-    protected static ?string $navigationIcon   = 'heroicon-o-shopping-cart';
-    protected static ?string $navigationLabel  = 'Ventas';
-    protected static ?string $navigationGroup  = 'Ventas';
-    protected static ?int    $navigationSort   = 1;
-    protected static ?string $modelLabel       = 'Pedido de Venta';
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
+
+    protected static ?string $navigationLabel = 'Ventas';
+
+    protected static ?string $navigationGroup = 'Ventas';
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $modelLabel = 'Pedido de Venta';
+
     protected static ?string $pluralModelLabel = 'Ventas de Mi Sucursal';
 
     public static function getEloquentQuery(): Builder
@@ -38,7 +42,7 @@ class PedidoVentaSucursalResource extends Resource
             Forms\Components\Section::make('Encabezado')->columns(4)->schema([
                 Forms\Components\TextInput::make('numero')
                     ->label('N° Pedido')
-                    ->default(fn() => PedidoVenta::generarNumero())
+                    ->default(fn () => PedidoVenta::generarNumero())
                     ->disabled()->dehydrated()->required()->columnSpan(1),
 
                 Forms\Components\Select::make('cliente_id')
@@ -52,12 +56,12 @@ class PedidoVentaSucursalResource extends Resource
 
                 Forms\Components\Select::make('estado')
                     ->options([
-                        'borrador'       => 'Borrador',
-                        'confirmado'     => 'Confirmado',
+                        'borrador' => 'Borrador',
+                        'confirmado' => 'Confirmado',
                         'en_preparacion' => 'En Preparación',
-                        'listo'          => 'Listo',
-                        'entregado'      => 'Entregado',
-                        'cancelado'      => 'Cancelado',
+                        'listo' => 'Listo',
+                        'entregado' => 'Entregado',
+                        'cancelado' => 'Cancelado',
                     ])
                     ->default('borrador')->required()->columnSpan(1),
 
@@ -74,7 +78,7 @@ class PedidoVentaSucursalResource extends Resource
                     ->default('directo')->columnSpan(1),
 
                 Forms\Components\Hidden::make('almacen_id')
-                    ->default(fn() => auth()->user()?->almacen_id),
+                    ->default(fn () => auth()->user()?->almacen_id),
             ]),
 
             Forms\Components\Section::make('Líneas de Pedido')->schema([
@@ -84,7 +88,7 @@ class PedidoVentaSucursalResource extends Resource
                         $subtotal = collect($state)->sum('subtotal');
                         $set('subtotal', round($subtotal, 2));
                         $set('impuesto', round($subtotal * 0.13, 2));
-                        $costo = (float)($get('costo_envio') ?? 0);
+                        $costo = (float) ($get('costo_envio') ?? 0);
                         $set('total', round($subtotal * 1.13 + $costo, 2));
                     })
                     ->columns(5)
@@ -97,21 +101,21 @@ class PedidoVentaSucursalResource extends Resource
                                 $p = Producto::find($state);
                                 if ($p) {
                                     $set('precio_unitario', $p->precio_venta);
-                                    $set('subtotal', round((float)($get('cantidad') ?? 1) * $p->precio_venta, 2));
+                                    $set('subtotal', round((float) ($get('cantidad') ?? 1) * $p->precio_venta, 2));
                                 }
                             })->columnSpan(2),
 
                         Forms\Components\TextInput::make('cantidad')
                             ->label('Cantidad')->numeric()->default(1)->minValue(0.001)->required()->live()
                             ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
-                                $precio = (float)($get('precio_unitario') ?? 0);
-                                $set('subtotal', round((float)$state * $precio, 2));
+                                $precio = (float) ($get('precio_unitario') ?? 0);
+                                $set('subtotal', round((float) $state * $precio, 2));
                             }),
 
                         Forms\Components\TextInput::make('precio_unitario')
                             ->label('Precio')->numeric()->prefix('$')->required()->live()
                             ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
-                                $set('subtotal', round((float)($get('cantidad') ?? 1) * (float)$state, 2));
+                                $set('subtotal', round((float) ($get('cantidad') ?? 1) * (float) $state, 2));
                             }),
 
                         Forms\Components\TextInput::make('subtotal')
@@ -129,8 +133,8 @@ class PedidoVentaSucursalResource extends Resource
                     ->disabled()->dehydrated()->default(0),
                 Forms\Components\TextInput::make('costo_envio')->label('Envío')->numeric()->prefix('$')->default(0)
                     ->live()->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
-                        $sub = (float)($get('subtotal') ?? 0);
-                        $set('total', round($sub * 1.13 + (float)$state, 2));
+                        $sub = (float) ($get('subtotal') ?? 0);
+                        $set('total', round($sub * 1.13 + (float) $state, 2));
                     }),
                 Forms\Components\TextInput::make('total')->label('TOTAL')->numeric()->prefix('$')
                     ->disabled()->dehydrated()->default(0),
@@ -145,19 +149,19 @@ class PedidoVentaSucursalResource extends Resource
             Infolists\Components\Section::make('Pedido')->columns(4)->schema([
                 Infolists\Components\TextEntry::make('numero')->label('N° Pedido')->badge()->color('primary'),
                 Infolists\Components\TextEntry::make('estado')->badge()
-                    ->color(fn($state) => match($state) {
-                        'borrador'       => 'gray',
-                        'confirmado'     => 'info',
+                    ->color(fn ($state) => match ($state) {
+                        'borrador' => 'gray',
+                        'confirmado' => 'info',
                         'en_preparacion' => 'warning',
-                        'listo'          => 'primary',
-                        'entregado'      => 'success',
-                        'cancelado'      => 'danger',
-                        default          => 'gray',
+                        'listo' => 'primary',
+                        'entregado' => 'success',
+                        'cancelado' => 'danger',
+                        default => 'gray',
                     }),
                 Infolists\Components\TextEntry::make('cliente.nombre')->label('Cliente'),
                 Infolists\Components\TextEntry::make('fecha_pedido')->label('Fecha')->date('d/m/Y'),
                 Infolists\Components\TextEntry::make('prioridad')->badge()
-                    ->color(fn($state) => match($state) {
+                    ->color(fn ($state) => match ($state) {
                         'baja' => 'gray', 'normal' => 'info', 'alta' => 'warning', 'urgente' => 'danger', default => 'gray',
                     }),
                 Infolists\Components\TextEntry::make('canal_venta')->label('Canal')->badge()->color('gray'),
@@ -196,46 +200,30 @@ class PedidoVentaSucursalResource extends Resource
                     ->colors(['gray' => 'baja', 'info' => 'normal', 'warning' => 'alta', 'danger' => 'urgente']),
                 Tables\Columns\BadgeColumn::make('estado')
                     ->colors([
-                        'gray'    => 'borrador',
-                        'info'    => 'confirmado',
+                        'gray' => 'borrador',
+                        'info' => 'confirmado',
                         'warning' => 'en_preparacion',
                         'primary' => 'listo',
                         'success' => 'entregado',
-                        'danger'  => 'cancelado',
+                        'danger' => 'cancelado',
                     ]),
                 Tables\Columns\TextColumn::make('total')->label('Total')->money('USD')->sortable()->alignRight(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('estado')
                     ->options([
-                        'borrador'       => 'Borrador',
-                        'confirmado'     => 'Confirmado',
+                        'borrador' => 'Borrador',
+                        'confirmado' => 'Confirmado',
                         'en_preparacion' => 'En Preparación',
-                        'listo'          => 'Listo',
-                        'entregado'      => 'Entregado',
-                        'cancelado'      => 'Cancelado',
+                        'listo' => 'Listo',
+                        'entregado' => 'Entregado',
+                        'cancelado' => 'Cancelado',
                     ])->multiple(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make()
-                    ->visible(fn($record) => in_array($record->estado, ['borrador', 'confirmado'])),
-                Tables\Actions\Action::make('confirmar')
-                    ->label('Confirmar')->icon('heroicon-m-check')->color('info')
-                    ->visible(fn($record) => $record->estado === 'borrador')
-                    ->requiresConfirmation()
-                    ->action(function($record) {
-                        $record->update(['estado' => 'confirmado']);
-                        Notification::make()->success()->title('Pedido confirmado')->send();
-                    }),
-                Tables\Actions\Action::make('marcar_listo')
-                    ->label('Listo')->icon('heroicon-m-check-circle')->color('primary')
-                    ->visible(fn($record) => $record->estado === 'en_preparacion')
-                    ->requiresConfirmation()
-                    ->action(function($record) {
-                        $record->update(['estado' => 'listo']);
-                        Notification::make()->success()->title('Pedido listo para despacho')->send();
-                    }),
+                    ->visible(fn ($record) => in_array($record->estado, ['borrador', 'confirmado'])),
             ])
             ->headerActions([Tables\Actions\CreateAction::make()])
             ->defaultSort('created_at', 'desc');
@@ -244,9 +232,12 @@ class PedidoVentaSucursalResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $id = auth()->user()?->almacen_id;
-        if (!$id) return null;
+        if (! $id) {
+            return null;
+        }
         $count = PedidoVenta::where('almacen_id', $id)
             ->whereIn('estado', ['confirmado', 'en_preparacion'])->count();
+
         return $count > 0 ? (string) $count : null;
     }
 
@@ -258,10 +249,10 @@ class PedidoVentaSucursalResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListPedidosVentaSucursal::route('/'),
+            'index' => Pages\ListPedidosVentaSucursal::route('/'),
             'create' => Pages\CreatePedidoVentaSucursal::route('/create'),
-            'view'   => Pages\ViewPedidoVentaSucursal::route('/{record}'),
-            'edit'   => Pages\EditPedidoVentaSucursal::route('/{record}/edit'),
+            'view' => Pages\ViewPedidoVentaSucursal::route('/{record}'),
+            'edit' => Pages\EditPedidoVentaSucursal::route('/{record}/edit'),
         ];
     }
 }

@@ -6,8 +6,8 @@ use App\Filament\Sucursal\Pages\DashboardSucursal;
 use App\Filament\Sucursal\Pages\ReportesSucursal;
 use App\Filament\Sucursal\Resources\InventarioSucursalResource;
 use App\Filament\Sucursal\Resources\PedidoVentaSucursalResource;
-use App\Filament\Sucursal\Resources\TrasladoSucursalResource;
 use App\Filament\Sucursal\Resources\TransportistaSucursalResource;
+use App\Filament\Sucursal\Resources\TrasladoSucursalResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -33,11 +33,11 @@ class SucursalPanelProvider extends PanelProvider
             ->login()
             ->colors([
                 'primary' => Color::Teal,
-                'gray'    => Color::Slate,
+                'gray' => Color::Slate,
                 'success' => Color::Emerald,
                 'warning' => Color::Amber,
-                'danger'  => Color::Rose,
-                'info'    => Color::Sky,
+                'danger' => Color::Rose,
+                'info' => Color::Sky,
             ])
             ->font('Inter')
             ->brandName('AgroAlvarado — Mi Sucursal')

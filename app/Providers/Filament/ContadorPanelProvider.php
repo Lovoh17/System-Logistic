@@ -39,11 +39,11 @@ class ContadorPanelProvider extends PanelProvider
             ->login()
             ->colors([
                 'primary' => Color::Emerald,
-                'gray'    => Color::Slate,
-                'info'    => Color::Teal,
+                'gray' => Color::Slate,
+                'info' => Color::Teal,
                 'success' => Color::Green,
                 'warning' => Color::Amber,
-                'danger'  => Color::Rose,
+                'danger' => Color::Rose,
             ])
             ->font('Inter')
             ->brandName('TraceLog - Contabilidad')

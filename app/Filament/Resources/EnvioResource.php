@@ -4,24 +4,28 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\EnvioResource\Pages;
 use App\Models\Envio;
-use App\Models\Transportista;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
 
 class EnvioResource extends Resource
 {
     protected static ?string $model = Envio::class;
 
-    protected static ?string $navigationIcon   = 'heroicon-o-truck';
-    protected static ?string $navigationLabel  = 'Envíos y Transporte';
-    protected static ?string $navigationGroup  = 'Logística';
-    protected static ?int    $navigationSort   = 1;
-    protected static ?string $modelLabel       = 'Envío';
+    protected static ?string $navigationIcon = 'heroicon-o-truck';
+
+    protected static ?string $navigationLabel = 'Envíos y Transporte';
+
+    protected static ?string $navigationGroup = 'Logística';
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $modelLabel = 'Envío';
+
     protected static ?string $pluralModelLabel = 'Envíos';
 
     public static function form(Form $form): Form
@@ -33,7 +37,7 @@ class EnvioResource extends Resource
                 ->schema([
                     Forms\Components\TextInput::make('numero')
                         ->label('N° Envío')
-                        ->default(fn() => Envio::generarNumero())
+                        ->default(fn () => Envio::generarNumero())
                         ->disabled()
                         ->dehydrated()
                         ->required()
@@ -49,14 +53,14 @@ class EnvioResource extends Resource
 
                     Forms\Components\Select::make('estado')
                         ->options([
-                            'programado'     => 'Programado',
+                            'programado' => 'Programado',
                             'en_preparacion' => 'En Preparación',
-                            'despachado'     => 'Despachado',
-                            'en_transito'    => 'En Tránsito',
-                            'en_destino'     => 'En Destino',
-                            'entregado'      => 'Entregado',
-                            'fallido'        => 'Fallido',
-                            'devuelto'       => 'Devuelto',
+                            'despachado' => 'Despachado',
+                            'en_transito' => 'En Tránsito',
+                            'en_destino' => 'En Destino',
+                            'entregado' => 'Entregado',
+                            'fallido' => 'Fallido',
+                            'devuelto' => 'Devuelto',
                         ])
                         ->default('programado')
                         ->required()
@@ -65,8 +69,7 @@ class EnvioResource extends Resource
                     Forms\Components\Select::make('transportista_id')
                         ->label('Transportista / Unidad')
                         ->relationship('transportista', 'id')
-                        ->getOptionLabelFromRecordUsing(fn($record) =>
-                            ($record->user?->name ?? 'Sin nombre') . ' — ' . ($record->vehiculo_placa ?? 'sin placa')
+                        ->getOptionLabelFromRecordUsing(fn ($record) => ($record->user?->name ?? 'Sin nombre').' — '.($record->vehiculo_placa ?? 'sin placa')
                         )
                         ->searchable()
                         ->preload()
@@ -143,7 +146,7 @@ class EnvioResource extends Resource
                         ->label('Motivo de Fallo (si aplica)')
                         ->rows(2)
                         ->columnSpanFull()
-                        ->visible(fn(Forms\Get $get) => in_array($get('estado'), ['fallido', 'devuelto'])),
+                        ->visible(fn (Forms\Get $get) => in_array($get('estado'), ['fallido', 'devuelto'])),
                 ]),
 
             Forms\Components\Section::make('Seguimiento GPS')
@@ -184,7 +187,7 @@ class EnvioResource extends Resource
 
                 Tables\Columns\TextColumn::make('destino_municipio')
                     ->label('Destino')
-                    ->description(fn($record) => $record->destino_departamento),
+                    ->description(fn ($record) => $record->destino_departamento),
 
                 Tables\Columns\TextColumn::make('fecha_programada')
                     ->label('Programado')
@@ -196,14 +199,14 @@ class EnvioResource extends Resource
 
                 Tables\Columns\BadgeColumn::make('estado')
                     ->colors([
-                        'gray'    => 'programado',
+                        'gray' => 'programado',
                         'warning' => 'en_preparacion',
-                        'info'    => 'despachado',
+                        'info' => 'despachado',
                         'primary' => 'en_transito',
-                        'indigo'  => 'en_destino',
+                        'indigo' => 'en_destino',
                         'success' => 'entregado',
-                        'danger'  => 'fallido',
-                        'orange'  => 'devuelto',
+                        'danger' => 'fallido',
+                        'orange' => 'devuelto',
                     ]),
 
                 Tables\Columns\TextColumn::make('costo_envio')
@@ -213,50 +216,25 @@ class EnvioResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('estado')
                     ->options([
-                        'programado'     => 'Programado',
+                        'programado' => 'Programado',
                         'en_preparacion' => 'En Preparación',
-                        'despachado'     => 'Despachado',
-                        'en_transito'    => 'En Tránsito',
-                        'en_destino'     => 'En Destino',
-                        'entregado'      => 'Entregado',
-                        'fallido'        => 'Fallido',
+                        'despachado' => 'Despachado',
+                        'en_transito' => 'En Tránsito',
+                        'en_destino' => 'En Destino',
+                        'entregado' => 'Entregado',
+                        'fallido' => 'Fallido',
                     ])
                     ->multiple(),
 
                 Tables\Filters\SelectFilter::make('transportista_id')
                     ->label('Transportista')
                     ->relationship('transportista', 'id')
-                    ->getOptionLabelFromRecordUsing(fn($record) =>
-                        ($record->user?->name ?? 'Sin nombre') . ' — ' . ($record->vehiculo_placa ?? 'sin placa')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => ($record->user?->name ?? 'Sin nombre').' — '.($record->vehiculo_placa ?? 'sin placa')
                     ),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('registrar_seguimiento')
-                    ->label('Registrar Evento')
-                    ->icon('heroicon-o-map-pin')
-                    ->color('info')
-                    ->form([
-                        Forms\Components\TextInput::make('evento')
-                            ->label('Evento')
-                            ->required()
-                            ->placeholder('Ej: Salida de bodega, Llegada a destino'),
-                        Forms\Components\TextInput::make('ubicacion')
-                            ->label('Ubicación'),
-                        Forms\Components\DateTimePicker::make('fecha_hora')
-                            ->label('Fecha y Hora')
-                            ->default(now())
-                            ->required(),
-                        Forms\Components\Textarea::make('descripcion')
-                            ->label('Descripción')->rows(2),
-                    ])
-                    ->action(function (Envio $record, array $data) {
-                        $record->seguimientos()->create([
-                            ...$data,
-                            'responsable' => auth()->user()->name,
-                        ]);
-                    }),
             ])
             ->defaultSort('created_at', 'desc');
     }
@@ -270,15 +248,15 @@ class EnvioResource extends Resource
                     Infolists\Components\TextEntry::make('numero')->badge()->color('primary'),
                     Infolists\Components\TextEntry::make('estado')
                         ->badge()
-                        ->color(fn($record) => match($record->estado) {
-                            'programado'     => 'gray',
+                        ->color(fn ($record) => match ($record->estado) {
+                            'programado' => 'gray',
                             'en_preparacion' => 'warning',
-                            'despachado'     => 'info',
-                            'en_transito'    => 'primary',
-                            'en_destino'     => 'indigo',
-                            'entregado'      => 'success',
-                            'fallido'        => 'danger',
-                            default           => 'gray',
+                            'despachado' => 'info',
+                            'en_transito' => 'primary',
+                            'en_destino' => 'indigo',
+                            'entregado' => 'success',
+                            'fallido' => 'danger',
+                            default => 'gray',
                         }),
                     Infolists\Components\TextEntry::make('pedidoVenta.numero')
                         ->label('Pedido')->badge()->color('gray'),
@@ -313,6 +291,7 @@ class EnvioResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $enRuta = static::getModel()::whereIn('estado', ['despachado', 'en_transito', 'en_destino'])->count();
+
         return $enRuta > 0 ? (string) $enRuta : null;
     }
 
@@ -324,10 +303,10 @@ class EnvioResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListEnvio::route('/'),
+            'index' => Pages\ListEnvio::route('/'),
             'create' => Pages\CreateEnvio::route('/create'),
-            'view'   => Pages\ViewEnvio::route('/{record}'),
-            'edit'   => Pages\EditEnvio::route('/{record}/edit'),
+            'view' => Pages\ViewEnvio::route('/{record}'),
+            'edit' => Pages\EditEnvio::route('/{record}/edit'),
         ];
     }
 }

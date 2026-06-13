@@ -2,10 +2,9 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Pages\Ventas\PuntoVenta;
-use App\Filament\Pages\Ventas\MisVentas;
 use App\Filament\Pages\Ventas\InventarioSucursal;
-use App\Filament\Ventas\Pages\DashboardVentas;
+use App\Filament\Pages\Ventas\MisVentas;
+use App\Filament\Pages\Ventas\PuntoVenta;
 use App\Models\User;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -20,7 +19,6 @@ use Illuminate\Routing\Middleware\SubstituteBindings;   // ← sin espacio
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use App\Filament\Resources\{InventarioAlmacenResource,ProductoResource };
 
 class VentasPanelProvider extends PanelProvider
 {
@@ -35,7 +33,7 @@ class VentasPanelProvider extends PanelProvider
 
             ->colors([
                 'primary' => '#10b981',
-                'gray'    => '#6b7280',
+                'gray' => '#6b7280',
             ])
             ->brandName('TraceLog - Punto de Venta')
             ->brandLogo(asset('images/logo.png'))
@@ -50,7 +48,7 @@ class VentasPanelProvider extends PanelProvider
             ])
 
             ->pages([
-                PuntoVenta::class,       
+                PuntoVenta::class,
                 InventarioSucursal::class,
                 MisVentas::class,
             ])
@@ -65,7 +63,7 @@ class VentasPanelProvider extends PanelProvider
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
-                SubstituteBindings::class,          
+                SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
