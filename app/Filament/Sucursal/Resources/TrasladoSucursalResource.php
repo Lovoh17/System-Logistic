@@ -51,11 +51,15 @@ class TrasladoSucursalResource extends Resource
                     ->default(fn () => Traslado::generarNumero())
                     ->disabled()->dehydrated()->required()->columnSpan(1),
 
+                // El origen siempre es la sucursal del usuario (no editable).
                 Forms\Components\Select::make('almacen_origen_id')
                     ->label('Sucursal Origen')
-                    ->options(Almacen::where('activo', true)->pluck('nombre', 'id'))
+                    ->options(Almacen::where('id', $almacenId)->pluck('nombre', 'id'))
                     ->default($almacenId)
-                    ->required()->searchable()->columnSpan(1),
+                    ->disabled()
+                    ->dehydrated()
+                    ->required()
+                    ->columnSpan(1),
 
                 Forms\Components\Select::make('almacen_destino_id')
                     ->label('Sucursal Destino')
@@ -117,6 +121,7 @@ class TrasladoSucursalResource extends Resource
                     ->color(fn ($state) => match ($state) {
                         'sugerido' => 'warning',
                         'aprobado' => 'info',
+                        'en_transito' => 'primary',
                         'completado' => 'success',
                         'cancelado' => 'danger',
                         default => 'gray',
@@ -186,6 +191,7 @@ class TrasladoSucursalResource extends Resource
                     ->color(fn ($state) => match ($state) {
                         'sugerido' => 'warning',
                         'aprobado' => 'info',
+                        'en_transito' => 'primary',
                         'completado' => 'success',
                         'cancelado' => 'danger',
                         default => 'gray',
@@ -196,6 +202,7 @@ class TrasladoSucursalResource extends Resource
                 Tables\Filters\SelectFilter::make('estado')->options([
                     'sugerido' => 'Sugerido',
                     'aprobado' => 'Aprobado',
+                    'en_transito' => 'En Tránsito',
                     'completado' => 'Completado',
                     'cancelado' => 'Cancelado',
                 ]),

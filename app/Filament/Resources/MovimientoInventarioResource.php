@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\MovimientoInventarioResource\Pages;
 use App\Models\MovimientoInventario;
+use App\Models\Producto;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,16 +15,32 @@ class MovimientoInventarioResource extends Resource
 {
     protected static ?string $model = MovimientoInventario::class;
 
-    protected static ?string $navigationIcon   = 'heroicon-o-arrows-right-left';
-    protected static ?string $navigationLabel  = 'Kardex / Movimientos';
-    protected static ?string $navigationGroup  = 'Inventario';
-    protected static ?int    $navigationSort   = 2;
-    protected static ?string $modelLabel       = 'Movimiento';
+    protected static ?string $navigationIcon = 'heroicon-o-arrows-right-left';
+
+    protected static ?string $navigationLabel = 'Kardex / Movimientos';
+
+    protected static ?string $navigationGroup = 'Inventario';
+
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $modelLabel = 'Movimiento';
+
     protected static ?string $pluralModelLabel = 'Movimientos de Inventario';
 
-    public static function canCreate(): bool        { return true; }
-    public static function canEdit($record): bool   { return false; }
-    public static function canDelete($record): bool { return false; }
+    public static function canCreate(): bool
+    {
+        return true;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -41,13 +58,14 @@ class MovimientoInventarioResource extends Resource
                         ->required()
                         ->live()
                         ->afterStateUpdated(function ($state, Forms\Set $set) {
-                            if (!$state) {
+                            if (! $state) {
                                 $set('costo_unitario', null);
+
                                 return;
                             }
-                            $producto = \App\Models\Producto::find($state);
+                            $producto = Producto::find($state);
                             if ($producto) {
-                                $set('costo_unitario', $producto->precio_venta  ?? $producto->precio ?? $producto->costo ?? 0);
+                                $set('costo_unitario', $producto->precio_venta ?? $producto->precio ?? $producto->costo ?? 0);
                             }
                         })
                         ->validationMessages([
@@ -58,9 +76,9 @@ class MovimientoInventarioResource extends Resource
                     Forms\Components\Select::make('tipo')
                         ->label('Tipo de Movimiento')
                         ->options([
-                            'ajuste_positivo'    => 'Ajuste Positivo (Entrada)',
-                            'ajuste_negativo'    => 'Ajuste Negativo (Salida)',
-                            'merma'              => 'Merma / Pérdida',
+                            'ajuste_positivo' => 'Ajuste Positivo (Entrada)',
+                            'ajuste_negativo' => 'Ajuste Negativo (Salida)',
+                            'merma' => 'Merma / Pérdida',
                             'inventario_inicial' => 'Inventario Inicial',
                         ])
                         ->required()
@@ -79,8 +97,8 @@ class MovimientoInventarioResource extends Resource
                         ->rules(['required', 'integer', 'min:1'])
                         ->validationMessages([
                             'required' => 'La cantidad es obligatoria.',
-                            'integer'  => 'La cantidad debe ser un número entero.',
-                            'min'      => 'La cantidad mínima es 1.',
+                            'integer' => 'La cantidad debe ser un número entero.',
+                            'min' => 'La cantidad mínima es 1.',
                         ])
                         ->columnSpan(1),
 
@@ -94,8 +112,8 @@ class MovimientoInventarioResource extends Resource
                         ->rules(['required', 'numeric', 'min:0'])
                         ->validationMessages([
                             'required' => 'El costo unitario es obligatorio.',
-                            'numeric'  => 'Ingrese un valor numérico válido.',
-                            'min'      => 'El costo no puede ser negativo.',
+                            'numeric' => 'Ingrese un valor numérico válido.',
+                            'min' => 'El costo no puede ser negativo.',
                         ])
                         ->columnSpan(1),
 
@@ -106,8 +124,8 @@ class MovimientoInventarioResource extends Resource
                         ->maxDate(now())
                         ->rules(['required', 'before_or_equal:now'])
                         ->validationMessages([
-                            'required'         => 'La fecha es obligatoria.',
-                            'before_or_equal'  => 'La fecha no puede ser futura.',
+                            'required' => 'La fecha es obligatoria.',
+                            'before_or_equal' => 'La fecha no puede ser futura.',
                         ])
                         ->columnSpan(1),
 
@@ -138,8 +156,8 @@ class MovimientoInventarioResource extends Resource
                         ->rules(['required', 'string', 'min:10', 'max:500'])
                         ->validationMessages([
                             'required' => 'El motivo es obligatorio.',
-                            'min'      => 'El motivo debe tener al menos 10 caracteres.',
-                            'max'      => 'El motivo no puede superar 500 caracteres.',
+                            'min' => 'El motivo debe tener al menos 10 caracteres.',
+                            'max' => 'El motivo no puede superar 500 caracteres.',
                         ])
                         ->columnSpanFull(),
                 ]),
@@ -149,7 +167,7 @@ class MovimientoInventarioResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn($query) => $query->with(['producto', 'user', 'almacen']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['producto', 'user', 'almacen']))
             ->columns([
                 Tables\Columns\TextColumn::make('numero')
                     ->label('N° Mov.')
@@ -172,28 +190,29 @@ class MovimientoInventarioResource extends Resource
                 Tables\Columns\TextColumn::make('tipo')
                     ->label('Tipo')
                     ->badge()
-                    ->formatStateUsing(fn($state) => match($state) {
-                        'entrada_compra'     => 'Entrada Compra',
-                        'salida_venta'       => 'Salida Venta',
-                        'ajuste_positivo'    => '⬆ Ajuste (+)',
-                        'ajuste_negativo'    => '⬇ Ajuste (-)',
-                        'traslado_entrada'   => 'Traslado Entrada',
-                        'traslado_salida'    => 'Traslado Salida',
-                        'devolucion_compra'  => 'Dev. Compra',
-                        'devolucion_venta'   => 'Dev. Venta',
-                        'merma'              => 'Merma',
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'entrada_compra' => 'Entrada Compra',
+                        'salida_venta' => 'Salida Venta',
+                        'ajuste_positivo' => '⬆ Ajuste (+)',
+                        'ajuste_negativo' => '⬇ Ajuste (-)',
+                        'traslado_entrada' => 'Traslado Entrada',
+                        'traslado_salida' => 'Traslado Salida',
+                        'devolucion_compra' => 'Dev. Compra',
+                        'devolucion_venta' => 'Dev. Venta',
+                        'merma' => 'Merma',
                         'inventario_inicial' => 'Inv. Inicial',
-                        default              => $state,
+                        default => $state,
                     })
-                    ->color(function($record) {
+                    ->color(function ($record) {
                         try {
                             return $record->tipo_color;
                         } catch (\Throwable $e) {
                             \Log::error('[Kardex] tipo_color falló', [
                                 'movimiento_id' => $record->id,
-                                'tipo'          => $record->tipo,
-                                'error'         => $e->getMessage(),
+                                'tipo' => $record->tipo,
+                                'error' => $e->getMessage(),
                             ]);
+
                             return 'gray';
                         }
                     }),
@@ -201,18 +220,19 @@ class MovimientoInventarioResource extends Resource
                 Tables\Columns\TextColumn::make('cantidad')
                     ->label('Cantidad')
                     ->alignCenter()
-                    ->formatStateUsing(function($state, $record) {
+                    ->formatStateUsing(function ($state, $record) {
                         try {
-                            return ($record->es_entrada ? '+' : '-') . number_format($state, 0);
+                            return ($record->es_entrada ? '+' : '-').number_format($state, 0);
                         } catch (\Throwable $e) {
                             \Log::error('[Kardex] es_entrada falló', [
                                 'movimiento_id' => $record->id,
-                                'error'         => $e->getMessage(),
+                                'error' => $e->getMessage(),
                             ]);
+
                             return number_format($state, 0);
                         }
                     })
-                    ->color(function($record) {
+                    ->color(function ($record) {
                         try {
                             return $record->es_entrada ? 'success' : 'danger';
                         } catch (\Throwable $e) {
@@ -220,29 +240,14 @@ class MovimientoInventarioResource extends Resource
                         }
                     }),
 
+                // El stock_nuevo es el saldo registrado al momento del movimiento (snapshot).
+                // Se colorea de forma estática para evitar agregados por fila (N+1).
                 Tables\Columns\TextColumn::make('stock_nuevo')
                     ->label('Stock Nuevo')
                     ->alignCenter()
+                    ->numeric(0)
                     ->badge()
-                    ->color(function($record) {
-                        try {
-                            if (!$record->producto) {
-                                \Log::warning('[Kardex] stock_color: producto NULL', [
-                                    'movimiento_id' => $record->id,
-                                    'producto_id'   => $record->producto_id,
-                                ]);
-                                return 'gray';
-                            }
-                            return $record->producto->stock_color;
-                        } catch (\Throwable $e) {
-                            \Log::error('[Kardex] stock_color falló', [
-                                'movimiento_id' => $record->id,
-                                'producto_id'   => $record->producto_id,
-                                'error'         => $e->getMessage(),
-                            ]);
-                            return 'gray';
-                        }
-                    }),
+                    ->color('info'),
 
                 Tables\Columns\TextColumn::make('costo_total')
                     ->label('Valor')
@@ -261,11 +266,11 @@ class MovimientoInventarioResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('tipo')
                     ->options([
-                        'entrada_compra'     => 'Entrada Compra',
-                        'salida_venta'       => 'Salida Venta',
-                        'ajuste_positivo'    => 'Ajuste Positivo',
-                        'ajuste_negativo'    => 'Ajuste Negativo',
-                        'merma'              => 'Merma',
+                        'entrada_compra' => 'Entrada Compra',
+                        'salida_venta' => 'Salida Venta',
+                        'ajuste_positivo' => 'Ajuste Positivo',
+                        'ajuste_negativo' => 'Ajuste Negativo',
+                        'merma' => 'Merma',
                         'inventario_inicial' => 'Inventario Inicial',
                     ])->multiple(),
 
@@ -279,10 +284,9 @@ class MovimientoInventarioResource extends Resource
                         Forms\Components\DatePicker::make('desde')->label('Desde'),
                         Forms\Components\DatePicker::make('hasta')->label('Hasta'),
                     ])
-                    ->query(fn($query, array $data) =>
-                    $query
-                        ->when($data['desde'], fn($q, $d) => $q->whereDate('fecha_movimiento', '>=', $d))
-                        ->when($data['hasta'], fn($q, $d) => $q->whereDate('fecha_movimiento', '<=', $d))
+                    ->query(fn ($query, array $data) => $query
+                        ->when($data['desde'], fn ($q, $d) => $q->whereDate('fecha_movimiento', '>=', $d))
+                        ->when($data['hasta'], fn ($q, $d) => $q->whereDate('fecha_movimiento', '<=', $d))
                     ),
             ])
             ->defaultSort('fecha_movimiento', 'desc')
@@ -295,7 +299,7 @@ class MovimientoInventarioResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListMovimientoInventario::route('/'),
+            'index' => Pages\ListMovimientoInventario::route('/'),
             'create' => Pages\CreateMovimientoInventario::route('/create'),
         ];
     }

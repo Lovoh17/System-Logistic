@@ -110,7 +110,7 @@ class PedidoVentaResource extends Resource
                         ->searchable()
                         ->preload()
                         ->default(fn () => auth()->user()->almacen_id)
-                        ->disabled(fn () => auth()->user()->rol !== 'super-admin')
+                        ->disabled(fn () => ! auth()->user()->hasRole('super_admin'))
                         ->columnSpan(1),
                 ]),
 

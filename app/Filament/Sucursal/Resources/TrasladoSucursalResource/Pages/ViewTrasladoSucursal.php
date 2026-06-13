@@ -3,7 +3,6 @@
 namespace App\Filament\Sucursal\Resources\TrasladoSucursalResource\Pages;
 
 use App\Filament\Sucursal\Resources\TrasladoSucursalResource;
-use App\Models\InventarioAlmacen;
 use App\Models\TrasladoItem;
 use App\Models\User;
 use Filament\Actions\Action;
@@ -20,11 +19,28 @@ class ViewTrasladoSucursal extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            // Despacho por la sucursal de ORIGEN: descuenta su stock (vía TrasladoObserver).
+            Action::make('despachar')
+                ->label('Despachar Traslado')
+                ->icon('heroicon-m-truck')
+                ->color('warning')
+                ->visible(fn () => $this->record->estado === 'aprobado'
+                    && $this->record->almacen_origen_id === auth()->user()?->almacen_id
+                )
+                ->requiresConfirmation()
+                ->modalHeading('Despachar Traslado')
+                ->modalDescription('Se descontará el stock de tu sucursal y el traslado quedará en tránsito hacia el destino.')
+                ->action(function () {
+                    $this->record->update(['estado' => 'en_transito']);
+                    Notification::make()->success()->title('Traslado despachado')->body('El stock fue descontado de tu sucursal.')->send();
+                    $this->record->refresh();
+                }),
+
             Action::make('aceptar_traslado')
                 ->label('Aceptar y Recibir Traslado')
                 ->icon('heroicon-m-inbox-arrow-down')
                 ->color('success')
-                ->visible(fn () => $this->record->estado === 'sugerido'
+                ->visible(fn () => $this->record->estado === 'en_transito'
                     && $this->record->almacen_destino_id === auth()->user()?->almacen_id
                 )
                 ->modalHeading('Confirmar Cantidades Recibidas')
@@ -82,33 +98,14 @@ class ViewTrasladoSucursal extends ViewRecord
                     return $fields;
                 })
                 ->action(function () {
-                    $almacenDestinoId = $this->record->almacen_destino_id;
-                    $almacenOrigenId = $this->record->almacen_origen_id;
-
+                    // Confirma lo recibido; el ingreso al destino lo realiza TrasladoObserver.
                     foreach ($this->record->items as $item) {
-                        $cantReal = floatval($item->cantidad_sugerida);
-                        $item->update(['cantidad_real' => $cantReal]);
-
-                        $invDestino = InventarioAlmacen::firstOrCreate(
-                            ['producto_id' => $item->producto_id, 'almacen_id' => $almacenDestinoId],
-                            ['stock_actual' => 0, 'stock_minimo' => 0, 'stock_maximo' => 999999, 'punto_reorden' => 0]
-                        );
-                        $invDestino->increment('stock_actual', $cantReal);
-
-                        $invOrigen = InventarioAlmacen::where('producto_id', $item->producto_id)
-                            ->where('almacen_id', $almacenOrigenId)
-                            ->first();
-
-                        if ($invOrigen) {
-                            $invOrigen->decrement('stock_actual', min($cantReal, $invOrigen->stock_actual));
-                        }
+                        $item->update(['cantidad_real' => floatval($item->cantidad_sugerida)]);
                     }
 
                     $this->record->update([
                         'estado' => 'completado',
                         'fecha_completado' => now(),
-                        'aprobado_por' => auth()->id(),
-                        'fecha_aprobacion' => now(),
                     ]);
 
                     Notification::make()
@@ -133,7 +130,7 @@ class ViewTrasladoSucursal extends ViewRecord
                 ->label('Completar Traslado')
                 ->icon('heroicon-m-check-circle')
                 ->color('success')
-                ->visible(fn () => $this->record->estado === 'aprobado')
+                ->visible(fn () => $this->record->estado === 'en_transito')
                 ->modalHeading('Completar Traslado')
                 ->modalWidth('lg')
                 ->form(fn () => $this->record->items->flatMap(fn ($item, $i) => [
@@ -151,19 +148,13 @@ class ViewTrasladoSucursal extends ViewRecord
                         ->step(0.001),
                 ])->values()->toArray())
                 ->action(function (array $data) {
+                    // Solo persistimos la cantidad real; el ingreso al destino lo hace TrasladoObserver.
                     foreach ($data['items'] ?? [] as $itemData) {
                         $item = TrasladoItem::find($itemData['item_id']);
                         if (! $item) {
                             continue;
                         }
-                        $cantReal = floatval($itemData['cantidad_real']);
-                        $item->update(['cantidad_real' => $cantReal]);
-
-                        $inv = InventarioAlmacen::firstOrCreate(
-                            ['producto_id' => $item->producto_id, 'almacen_id' => $this->record->almacen_destino_id],
-                            ['stock_actual' => 0, 'stock_minimo' => 0, 'stock_maximo' => 999999, 'punto_reorden' => 0]
-                        );
-                        $inv->increment('stock_actual', $cantReal);
+                        $item->update(['cantidad_real' => floatval($itemData['cantidad_real'])]);
                     }
                     $this->record->update(['estado' => 'completado', 'fecha_completado' => now()]);
                     Notification::make()->success()->title('Traslado completado. Inventario actualizado.')->send();

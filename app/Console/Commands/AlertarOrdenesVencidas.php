@@ -9,7 +9,8 @@ use Illuminate\Console\Command;
 
 class AlertarOrdenesVencidas extends Command
 {
-    protected $signature   = 'compras:alertar-ordenes-vencidas';
+    protected $signature = 'compras:alertar-ordenes-vencidas';
+
     protected $description = 'Envía notificaciones de base de datos para órdenes de compra que llevan más de 7 días sin recibir.';
 
     public function handle(): int
@@ -21,12 +22,12 @@ class AlertarOrdenesVencidas extends Command
 
         if ($ordenes->isEmpty()) {
             $this->info('Sin órdenes vencidas. Nada que notificar.');
+
             return self::SUCCESS;
         }
 
-        // Notificar a todos los usuarios con rol Admin o Logistica.
-        // Ajusta los nombres de rol según tu configuración de Spatie Permission.
-        $usuarios = User::role(['Admin', 'Logistica'])->get();
+        // Notificar a todos los usuarios con rol super_admin o logistica.
+        $usuarios = User::role(['super_admin', 'logistica'])->get();
 
         if ($usuarios->isEmpty()) {
             $usuarios = User::all();
@@ -34,9 +35,9 @@ class AlertarOrdenesVencidas extends Command
 
         foreach ($ordenes as $orden) {
             $proveedorNombre = $orden->proveedor?->nombre ?? '(sin proveedor)';
-            $titulo  = "OC Vencida: {$orden->numero}";
-            $cuerpo  = "La orden {$orden->numero} del proveedor \"{$proveedorNombre}\" "
-                     . "lleva más de 7 días pendiente de recepción.";
+            $titulo = "OC Vencida: {$orden->numero}";
+            $cuerpo = "La orden {$orden->numero} del proveedor \"{$proveedorNombre}\" "
+                     .'lleva más de 7 días pendiente de recepción.';
 
             foreach ($usuarios as $usuario) {
                 Notification::make()

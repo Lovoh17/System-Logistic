@@ -80,6 +80,7 @@ class TrasladoResource extends Resource
                         ->options([
                             'sugerido' => 'Sugerido',
                             'aprobado' => 'Aprobado',
+                            'en_transito' => 'En Tránsito',
                             'completado' => 'Completado',
                             'cancelado' => 'Cancelado',
                         ])
@@ -278,6 +279,7 @@ class TrasladoResource extends Resource
                     ->color(fn ($state) => match ($state) {
                         'sugerido' => 'warning',
                         'aprobado' => 'info',
+                        'en_transito' => 'primary',
                         'completado' => 'success',
                         'cancelado' => 'danger',
                         default => 'gray',
@@ -285,6 +287,7 @@ class TrasladoResource extends Resource
                     ->formatStateUsing(fn ($state) => match ($state) {
                         'sugerido' => 'Sugerido',
                         'aprobado' => 'Aprobado',
+                        'en_transito' => 'En Tránsito',
                         'completado' => 'Completado',
                         'cancelado' => 'Cancelado',
                         default => ucfirst($state),
@@ -295,6 +298,7 @@ class TrasladoResource extends Resource
                     ->options([
                         'sugerido' => 'Sugerido',
                         'aprobado' => 'Aprobado',
+                        'en_transito' => 'En Tránsito',
                         'completado' => 'Completado',
                         'cancelado' => 'Cancelado',
                     ]),

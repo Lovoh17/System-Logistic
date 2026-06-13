@@ -11,37 +11,51 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class EstadoResultados extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon  = 'heroicon-o-scale';
+    protected static ?string $navigationIcon = 'heroicon-o-scale';
+
     protected static ?string $navigationLabel = 'Estado de Resultados';
-    protected static ?string $title           = 'Estado de Resultados';
+
+    protected static ?string $title = 'Estado de Resultados';
+
     protected static ?string $navigationGroup = 'Finanzas';
-    protected static ?int    $navigationSort  = 2;
-    protected static string  $view            = 'filament.contador.pages.estado-resultados';
+
+    protected static ?int $navigationSort = 2;
+
+    protected static string $view = 'filament.contador.pages.estado-resultados';
 
     public ?array $data = [];
 
     // Resultados calculados (públicos para acceso en la vista)
-    public float $ingresos         = 0;
-    public float $costoVentas      = 0;
-    public float $utilidadBruta    = 0;
+    public float $ingresos = 0;
+
+    public float $costoVentas = 0;
+
+    public float $utilidadBruta = 0;
+
     public float $gastosOperativos = 0;
-    public float $utilidadNeta     = 0;
-    public float $margenBruto      = 0;
-    public float $margenNeto       = 0;
-    public int   $totalPedidosVenta  = 0;
-    public int   $totalPedidosCompra = 0;
+
+    public float $utilidadNeta = 0;
+
+    public float $margenBruto = 0;
+
+    public float $margenNeto = 0;
+
+    public int $totalPedidosVenta = 0;
+
+    public int $totalPedidosCompra = 0;
 
     public function mount(): void
     {
         $this->form->fill([
             'fecha_inicio' => now()->startOfMonth()->toDateString(),
-            'fecha_fin'    => now()->toDateString(),
+            'fecha_fin' => now()->toDateString(),
         ]);
         $this->calcular();
     }
@@ -74,43 +88,53 @@ class EstadoResultados extends Page implements HasForms
     public function calcular(): void
     {
         $inicio = $this->data['fecha_inicio'] ?? now()->startOfMonth()->toDateString();
-        $fin    = $this->data['fecha_fin']    ?? now()->toDateString();
+        $fin = $this->data['fecha_fin'] ?? now()->toDateString();
 
-        // Ingresos: ventas entregadas/confirmadas
-        $this->ingresos = (float) PedidoVenta::whereDate('fecha_pedido', '>=', $inicio)
-            ->whereDate('fecha_pedido', '<=', $fin)
-            ->whereNotIn('estado', ['cancelado', 'borrador'])
-            ->sum('total');
+        $base = Cache::remember("estado_resultados:{$inicio}:{$fin}", now()->addMinutes(10), function () use ($inicio, $fin) {
+            // Ingresos: ventas entregadas/confirmadas
+            $ingresos = (float) PedidoVenta::whereDate('fecha_pedido', '>=', $inicio)
+                ->whereDate('fecha_pedido', '<=', $fin)
+                ->whereNotIn('estado', ['cancelado', 'borrador'])
+                ->sum('total');
 
-        $this->totalPedidosVenta = PedidoVenta::whereDate('fecha_pedido', '>=', $inicio)
-            ->whereDate('fecha_pedido', '<=', $fin)
-            ->whereNotIn('estado', ['cancelado', 'borrador'])
-            ->count();
+            $totalPedidosVenta = PedidoVenta::whereDate('fecha_pedido', '>=', $inicio)
+                ->whereDate('fecha_pedido', '<=', $fin)
+                ->whereNotIn('estado', ['cancelado', 'borrador'])
+                ->count();
 
-        // Costo de ventas: qty * precio_compra del producto
-        $this->costoVentas = (float) DB::table('pedidos_venta_items as pvi')
-            ->join('pedidos_venta as pv', 'pv.id', '=', 'pvi.pedido_venta_id')
-            ->join('productos as p', 'p.id', '=', 'pvi.producto_id')
-            ->whereDate('pv.fecha_pedido', '>=', $inicio)
-            ->whereDate('pv.fecha_pedido', '<=', $fin)
-            ->whereNotIn('pv.estado', ['cancelado', 'borrador'])
-            ->whereNull('pv.deleted_at')
-            ->sum(DB::raw('pvi.cantidad * p.precio_compra'));
+            // Costo de ventas: qty * precio_compra del producto
+            $costoVentas = (float) DB::table('pedidos_venta_items as pvi')
+                ->join('pedidos_venta as pv', 'pv.id', '=', 'pvi.pedido_venta_id')
+                ->join('productos as p', 'p.id', '=', 'pvi.producto_id')
+                ->whereDate('pv.fecha_pedido', '>=', $inicio)
+                ->whereDate('pv.fecha_pedido', '<=', $fin)
+                ->whereNotIn('pv.estado', ['cancelado', 'borrador'])
+                ->whereNull('pv.deleted_at')
+                ->sum(DB::raw('pvi.cantidad * p.precio_compra'));
 
-        // Gastos operativos: compras del período
-        $this->gastosOperativos = (float) PedidoCompra::whereDate('fecha_pedido', '>=', $inicio)
-            ->whereDate('fecha_pedido', '<=', $fin)
-            ->whereNotIn('estado', ['cancelado', 'borrador'])
-            ->sum('total');
+            // Gastos operativos: compras del período
+            $gastosOperativos = (float) PedidoCompra::whereDate('fecha_pedido', '>=', $inicio)
+                ->whereDate('fecha_pedido', '<=', $fin)
+                ->whereNotIn('estado', ['cancelado', 'borrador'])
+                ->sum('total');
 
-        $this->totalPedidosCompra = PedidoCompra::whereDate('fecha_pedido', '>=', $inicio)
-            ->whereDate('fecha_pedido', '<=', $fin)
-            ->whereNotIn('estado', ['cancelado', 'borrador'])
-            ->count();
+            $totalPedidosCompra = PedidoCompra::whereDate('fecha_pedido', '>=', $inicio)
+                ->whereDate('fecha_pedido', '<=', $fin)
+                ->whereNotIn('estado', ['cancelado', 'borrador'])
+                ->count();
+
+            return compact('ingresos', 'totalPedidosVenta', 'costoVentas', 'gastosOperativos', 'totalPedidosCompra');
+        });
+
+        $this->ingresos = $base['ingresos'];
+        $this->totalPedidosVenta = $base['totalPedidosVenta'];
+        $this->costoVentas = $base['costoVentas'];
+        $this->gastosOperativos = $base['gastosOperativos'];
+        $this->totalPedidosCompra = $base['totalPedidosCompra'];
 
         // Utilidades
         $this->utilidadBruta = $this->ingresos - $this->costoVentas;
-        $this->utilidadNeta  = $this->utilidadBruta - $this->gastosOperativos;
+        $this->utilidadNeta = $this->utilidadBruta - $this->gastosOperativos;
 
         $this->margenBruto = $this->ingresos > 0
             ? round(($this->utilidadBruta / $this->ingresos) * 100, 2)
@@ -121,6 +145,14 @@ class EstadoResultados extends Page implements HasForms
             : 0;
     }
 
+    public function recalcular(): void
+    {
+        $inicio = $this->data['fecha_inicio'] ?? now()->startOfMonth()->toDateString();
+        $fin = $this->data['fecha_fin'] ?? now()->toDateString();
+        Cache::forget("estado_resultados:{$inicio}:{$fin}");
+        $this->calcular();
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -128,7 +160,7 @@ class EstadoResultados extends Page implements HasForms
                 ->label('Recalcular')
                 ->icon('heroicon-o-arrow-path')
                 ->color('primary')
-                ->action('calcular'),
+                ->action('recalcular'),
         ];
     }
 }

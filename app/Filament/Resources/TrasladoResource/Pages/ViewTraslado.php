@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\TrasladoResource\Pages;
 
 use App\Filament\Resources\TrasladoResource;
-use App\Models\InventarioAlmacen;
 use App\Models\Transportista;
 use App\Models\TrasladoItem;
 use App\Models\User;
@@ -98,11 +97,26 @@ class ViewTraslado extends ViewRecord
                     $this->record->refresh();
                 }),
 
+            // Despacho: descuenta el stock del ORIGEN (lo realiza TrasladoObserver).
+            Actions\Action::make('despachar')
+                ->label('Despachar')
+                ->icon('heroicon-m-truck')
+                ->color('warning')
+                ->visible(fn () => $this->record->estado === 'aprobado')
+                ->requiresConfirmation()
+                ->modalHeading('Despachar Traslado')
+                ->modalDescription('Se descontará el stock de la sucursal de origen y el traslado quedará en tránsito.')
+                ->action(function () {
+                    $this->record->update(['estado' => 'en_transito']);
+                    Notification::make()->success()->title('Traslado despachado. Stock descontado del origen.')->send();
+                    $this->record->refresh();
+                }),
+
             Actions\Action::make('completar')
                 ->label('Completar')
                 ->icon('heroicon-m-check-circle')
                 ->color('success')
-                ->visible(fn () => $this->record->estado === 'aprobado')
+                ->visible(fn () => $this->record->estado === 'en_transito')
                 ->modalHeading('Completar Traslado')
                 ->modalWidth('lg')
                 ->form(fn () => $this->record->items->flatMap(fn ($item, $i) => [
@@ -120,31 +134,14 @@ class ViewTraslado extends ViewRecord
                         ->step(0.001),
                 ])->values()->toArray())
                 ->action(function (array $data) {
+                    // Solo persistimos la cantidad real; el ingreso al destino lo hace TrasladoObserver.
                     foreach ($data['items'] ?? [] as $itemData) {
                         $item = TrasladoItem::find($itemData['item_id']);
                         if (! $item) {
                             continue;
                         }
 
-                        $cantReal = floatval($itemData['cantidad_real']);
-                        $item->update(['cantidad_real' => $cantReal]);
-
-                        $inventario = InventarioAlmacen::where('producto_id', $item->producto_id)
-                            ->where('almacen_id', $this->record->almacen_destino_id)
-                            ->first();
-
-                        if ($inventario) {
-                            $inventario->increment('stock_actual', $cantReal);
-                        } else {
-                            InventarioAlmacen::create([
-                                'producto_id' => $item->producto_id,
-                                'almacen_id' => $this->record->almacen_destino_id,
-                                'stock_actual' => $cantReal,
-                                'stock_minimo' => 0,
-                                'stock_maximo' => 999999,
-                                'punto_reorden' => 0,
-                            ]);
-                        }
+                        $item->update(['cantidad_real' => floatval($itemData['cantidad_real'])]);
                     }
 
                     $this->record->update([

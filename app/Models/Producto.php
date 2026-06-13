@@ -56,26 +56,36 @@ class Producto extends Model
         return $this->hasMany(InventarioAlmacen::class);
     }
 
-    // Accessor para stock total (suma de todas las sucursales)
-    public function getStockTotalAttribute()
+    // Stock total = suma de stock_actual en todas las sucursales (inventario_almacen).
+    // Usa la relación ya cargada si está disponible para evitar N+1.
+    public function getStockTotalAttribute(): float
     {
-        return $this->inventarioAlmacen()->sum('stock_actual');
+        return $this->relationLoaded('inventarioAlmacen')
+            ? (float) $this->inventarioAlmacen->sum('stock_actual')
+            : (float) $this->inventarioAlmacen()->sum('stock_actual');
     }
 
     // Accessor para color del stock
-    public function getStockColorAttribute()
+    public function getStockColorAttribute(): string
     {
         $stock = $this->stock_total;
-        
-        if ($stock <= 0) return 'danger';
-        if ($stock <= $this->stock_minimo_global) return 'warning';
+
+        if ($stock <= 0) {
+            return 'danger';
+        }
+        if ($stock <= $this->stock_minimo_global) {
+            return 'warning';
+        }
+
         return 'success';
     }
 
-    // Stock mínimo global (opcional)
-    public function getStockMinimoGlobalAttribute()
+    // Stock mínimo global = menor stock_minimo configurado entre sucursales.
+    public function getStockMinimoGlobalAttribute(): float
     {
-        return $this->inventarioAlmacen()->min('stock_minimo') ?? 0;
+        return $this->relationLoaded('inventarioAlmacen')
+            ? (float) ($this->inventarioAlmacen->min('stock_minimo') ?? 0)
+            : (float) ($this->inventarioAlmacen()->min('stock_minimo') ?? 0);
     }
 
     // Scopes útiles
@@ -89,6 +99,7 @@ class Producto extends Model
     {
         $ultimo = self::orderBy('id', 'desc')->first();
         $numero = $ultimo ? intval(substr($ultimo->codigo, 5)) + 1 : 1;
-        return 'PROD-' . str_pad($numero, 3, '0', STR_PAD_LEFT);
+
+        return 'PROD-'.str_pad($numero, 3, '0', STR_PAD_LEFT);
     }
 }

@@ -2,106 +2,27 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Proveedor;
+use App\Models\Almacen;
+use App\Models\Categoria;
 use App\Models\Cliente;
 use App\Models\DireccionCliente;
-use App\Models\Categoria;
-use App\Models\Producto;
-use App\Models\Transportista;
-use App\Models\Almacen;
 use App\Models\InventarioAlmacen;
+use App\Models\Producto;
+use App\Models\Proveedor;
+use App\Models\Transportista;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use Database\Seeders\PlanCuentasSeeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
         // ═══════════════════════════════════════════════════════════════════
-        // 1. ROLES SPATIE
+        // 1. ROLES Y PERMISOS SPATIE (idempotente, ver PermisosRolesSeeder)
         // ═══════════════════════════════════════════════════════════════════
 
-        $roles = [
-            'super_admin'       => 'Super Administrador — acceso total al sistema',
-            'admin_sucursal'    => 'Administrador de sucursal — gestión de su almacén asignado',
-            'cajero'            => 'Cajero — alta/consulta de pedidos de venta',
-            'supervisor_bodega' => 'Supervisor de bodega — gestión de inventario y traslados',
-            'logistica'         => 'Logística — gestión de envíos y transportistas',
-            'contador'          => 'Contador — reportes financieros y estado de resultados',
-            'transportista'     => 'Transportista — conductor asignado a una sucursal',
-        ];
-
-        $rolesCreados = [];
-        foreach ($roles as $nombre => $descripcion) {
-            $rolesCreados[$nombre] = Role::firstOrCreate(
-                ['name' => $nombre, 'guard_name' => 'web']
-            );
-        }
-
-        // Permisos básicos por módulo
-        $permisos = [
-            'usuarios.ver', 'usuarios.crear', 'usuarios.editar', 'usuarios.eliminar',
-            'productos.ver', 'productos.crear', 'productos.editar', 'productos.eliminar',
-            'inventario.ver', 'inventario.ajustar', 'inventario.traslados',
-            'compras.ver', 'compras.crear', 'compras.aprobar', 'compras.cancelar',
-            'ventas.ver', 'ventas.crear', 'ventas.aprobar', 'ventas.cancelar',
-            'envios.ver', 'envios.crear', 'envios.despachar', 'envios.gestionar',
-            'reportes.ver', 'reportes.exportar',
-            'config.ver', 'config.editar',
-        ];
-
-        foreach ($permisos as $permiso) {
-            Permission::firstOrCreate(['name' => $permiso, 'guard_name' => 'web']);
-        }
-
-        // Asignar permisos a roles
-        $rolesCreados['super_admin']->syncPermissions(Permission::all());
-
-        $rolesCreados['admin_sucursal']->syncPermissions([
-            'productos.ver', 'productos.crear', 'productos.editar',
-            'inventario.ver', 'inventario.ajustar', 'inventario.traslados',
-            'compras.ver', 'compras.crear', 'compras.aprobar',
-            'ventas.ver', 'ventas.crear', 'ventas.aprobar', 'ventas.cancelar',
-            'envios.ver', 'envios.crear', 'envios.despachar',
-            'reportes.ver', 'reportes.exportar',
-        ]);
-
-        $rolesCreados['cajero']->syncPermissions([
-            'productos.ver',
-            'inventario.ver',
-            'ventas.ver', 'ventas.crear',
-            'envios.ver',
-            'reportes.ver',
-        ]);
-
-        $rolesCreados['supervisor_bodega']->syncPermissions([
-            'productos.ver', 'productos.editar',
-            'inventario.ver', 'inventario.ajustar', 'inventario.traslados',
-            'compras.ver', 'compras.crear',
-            'ventas.ver',
-            'envios.ver',
-            'reportes.ver',
-        ]);
-
-        $rolesCreados['logistica']->syncPermissions([
-            'productos.ver',
-            'inventario.ver',
-            'ventas.ver',
-            'envios.ver', 'envios.crear', 'envios.despachar', 'envios.gestionar',
-            'reportes.ver', 'reportes.exportar',
-        ]);
-
-        $rolesCreados['contador']->syncPermissions([
-            'productos.ver',
-            'inventario.ver',
-            'compras.ver',
-            'ventas.ver',
-            'reportes.ver', 'reportes.exportar',
-        ]);
+        $this->call(PermisosRolesSeeder::class);
 
         // ═══════════════════════════════════════════════════════════════════
         // 2. ALMACENES
@@ -152,7 +73,7 @@ class DatabaseSeeder extends Seeder
 
         foreach ($sucursalMap as $code => $info) {
             $almacenId = $info['almacen']->id;
-            $nombre    = $info['nombre'];
+            $nombre = $info['nombre'];
 
             $admin = User::updateOrCreate(
                 ['email' => "admin.{$code}@tracelog.com"],
@@ -235,63 +156,63 @@ class DatabaseSeeder extends Seeder
         // ═══════════════════════════════════════════════════════════════════
 
         $proveedor1 = Proveedor::create([
-            'codigo'             => 'PROV-001',
-            'nombre'             => 'Truper El Salvador',
-            'razon_social'       => 'Truper SA de CV',
-            'ruc'                => '0614-123456-001-0',
-            'email'              => 'ventas@truper.com.sv',
-            'telefono'           => '2244-1111',
-            'contacto_nombre'    => 'Carlos Mendoza',
-            'contacto_email'     => 'carlos.mendoza@truper.com',
-            'contacto_telefono'  => '7744-1122',
-            'pais'               => 'El Salvador',
-            'departamento'       => 'San Salvador',
-            'municipio'          => 'San Salvador',
-            'direccion'          => 'Carretera a Santa Tecla, km 10.5',
-            'categoria'          => 'general',
-            'tiempo_entrega_dias'=> 3,
-            'calificacion'       => 4.8,
-            'estado'             => 'activo',
+            'codigo' => 'PROV-001',
+            'nombre' => 'Truper El Salvador',
+            'razon_social' => 'Truper SA de CV',
+            'ruc' => '0614-123456-001-0',
+            'email' => 'ventas@truper.com.sv',
+            'telefono' => '2244-1111',
+            'contacto_nombre' => 'Carlos Mendoza',
+            'contacto_email' => 'carlos.mendoza@truper.com',
+            'contacto_telefono' => '7744-1122',
+            'pais' => 'El Salvador',
+            'departamento' => 'San Salvador',
+            'municipio' => 'San Salvador',
+            'direccion' => 'Carretera a Santa Tecla, km 10.5',
+            'categoria' => 'general',
+            'tiempo_entrega_dias' => 3,
+            'calificacion' => 4.8,
+            'estado' => 'activo',
         ]);
 
         $proveedor2 = Proveedor::create([
-            'codigo'             => 'PROV-002',
-            'nombre'             => 'Pinturas Comex',
-            'razon_social'       => 'Comex El Salvador',
-            'ruc'                => '0614-654321-002-0',
-            'email'              => 'pedidos@comex.com',
-            'telefono'           => '2222-2222',
-            'contacto_nombre'    => 'Ana Rivera',
-            'contacto_email'     => 'ana.rivera@comex.com',
-            'contacto_telefono'  => '7766-3344',
-            'pais'               => 'El Salvador',
-            'departamento'       => 'Santa Ana',
-            'municipio'          => 'Santa Ana',
-            'direccion'          => '3a Calle Poniente #45',
-            'categoria'          => 'general',
-            'tiempo_entrega_dias'=> 5,
-            'calificacion'       => 4.5,
-            'estado'             => 'activo',
+            'codigo' => 'PROV-002',
+            'nombre' => 'Pinturas Comex',
+            'razon_social' => 'Comex El Salvador',
+            'ruc' => '0614-654321-002-0',
+            'email' => 'pedidos@comex.com',
+            'telefono' => '2222-2222',
+            'contacto_nombre' => 'Ana Rivera',
+            'contacto_email' => 'ana.rivera@comex.com',
+            'contacto_telefono' => '7766-3344',
+            'pais' => 'El Salvador',
+            'departamento' => 'Santa Ana',
+            'municipio' => 'Santa Ana',
+            'direccion' => '3a Calle Poniente #45',
+            'categoria' => 'general',
+            'tiempo_entrega_dias' => 5,
+            'calificacion' => 4.5,
+            'estado' => 'activo',
         ]);
 
         $proveedor3 = Proveedor::create([
-            'codigo'             => 'PROV-003',
-            'nombre'             => 'Distribuidora La Selecta',
-            'razon_social'       => 'La Selecta Distribuciones',
-            'ruc'                => '0614-987654-003-0',
-            'email'              => 'ventas@laselecta.com.sv',
-            'telefono'           => '2222-3333',
-            'contacto_nombre'    => 'Roberto Gómez',
-            'contacto_email'     => 'roberto.gomez@laselecta.com',
-            'contacto_telefono'  => '7788-5566',
-            'pais'               => 'El Salvador',
-            'departamento'       => 'San Salvador',
-            'municipio'          => 'Soyapango',
-            'direccion'          => 'Polígono Industrial Don Bosco',
-            'categoria'          => 'materia_prima',
-            'tiempo_entrega_dias'=> 2,
-            'calificacion'       => 4.9,
-            'estado'             => 'activo',
+            'codigo' => 'PROV-003',
+            'nombre' => 'Distribuidora La Selecta',
+            'razon_social' => 'La Selecta Distribuciones',
+            'ruc' => '0614-987654-003-0',
+            'email' => 'ventas@laselecta.com.sv',
+            'telefono' => '2222-3333',
+            'contacto_nombre' => 'Roberto Gómez',
+            'contacto_email' => 'roberto.gomez@laselecta.com',
+            'contacto_telefono' => '7788-5566',
+            'pais' => 'El Salvador',
+            'departamento' => 'San Salvador',
+            'municipio' => 'Soyapango',
+            'direccion' => 'Polígono Industrial Don Bosco',
+            'categoria' => 'materia_prima',
+            'tiempo_entrega_dias' => 2,
+            'calificacion' => 4.9,
+            'estado' => 'activo',
         ]);
 
         // ═══════════════════════════════════════════════════════════════════
@@ -310,7 +231,7 @@ class DatabaseSeeder extends Seeder
             ['PROD-008', 'Pinza de Presión 10"',                5.00,   9.99,  40, 10,  50,  1, $proveedor1],
             ['PROD-009', 'Cemento Gris 42.5 kg',                7.50,  11.50, 250, 50, 300,  2, $proveedor3],
             ['PROD-010', 'Varilla Corrugada 3/8" x 6m',         6.00,   9.00, 150, 40, 200,  2, $proveedor3],
-            ['PROD-011', 'Block de Concreto 15x20x40',          0.45,   0.85, 800,200,1000,  2, $proveedor3],
+            ['PROD-011', 'Block de Concreto 15x20x40',          0.45,   0.85, 800, 200, 1000,  2, $proveedor3],
             ['PROD-012', 'Urea Agrícola 46% (50kg)',            35.00,  49.99,  60, 15,  80,  3, $proveedor3],
             ['PROD-013', 'Fosfato Diamónico DAP (50kg)',        42.00,  59.99,  45, 10,  60,  3, $proveedor3],
             ['PROD-014', 'Fertilizante Foliar 20-20-20',         8.00,  14.99,  85, 20, 100,  3, $proveedor3],
@@ -324,7 +245,7 @@ class DatabaseSeeder extends Seeder
             ['PROD-022', 'Sierra Circular 7-1/4"',              75.00, 119.99,  18,  4,  30,  0, $proveedor1],
             ['PROD-023', 'Cinta Métrica 5m',                     2.50,   4.99, 120, 30, 150,  1, $proveedor1],
             ['PROD-024', 'Nivel de Mano 60cm',                   8.00,  14.99,  35, 10,  50,  1, $proveedor1],
-            ['PROD-025', 'Calcomanía Reflectiva',                1.00,   2.50, 500,100, 600,  7, $proveedor1],
+            ['PROD-025', 'Calcomanía Reflectiva',                1.00,   2.50, 500, 100, 600,  7, $proveedor1],
             ['PROD-026', 'Guantes de Seguridad',                 3.00,   5.99,  80, 20, 100,  7, $proveedor1],
             ['PROD-027', 'Casco de Seguridad Industrial',        6.00,  12.99,  45, 10,  60,  7, $proveedor1],
             ['PROD-028', 'Machete para Jardín',                  8.00,  15.99,  30,  8,  40,  6, $proveedor1],
@@ -335,18 +256,18 @@ class DatabaseSeeder extends Seeder
         $productos = [];
         foreach ($productosLista as $item) {
             [$codigo, $nombre, $precioC, $precioV, $stockTotal, $min, $max, $catIdx, $proveedor] = $item;
-            
+
             $producto = Producto::create([
-                'codigo'           => $codigo,
-                'nombre'           => $nombre,
-                'sku'              => 'SKU-' . $codigo,
-                'categoria_id'     => $categorias[$catIdx]->id,
-                'proveedor_id'     => $proveedor->id,
-                'unidad_medida'    => 'unidad',
-                'precio_compra'    => $precioC,
-                'precio_venta'     => $precioV,
-                'ubicacion_almacen'=> 'A-' . str_pad(rand(1, 10), 2, '0', STR_PAD_LEFT),
-                'estado'           => 'activo',
+                'codigo' => $codigo,
+                'nombre' => $nombre,
+                'sku' => 'SKU-'.$codigo,
+                'categoria_id' => $categorias[$catIdx]->id,
+                'proveedor_id' => $proveedor->id,
+                'unidad_medida' => 'unidad',
+                'precio_compra' => $precioC,
+                'precio_venta' => $precioV,
+                'ubicacion_almacen' => 'A-'.str_pad(rand(1, 10), 2, '0', STR_PAD_LEFT),
+                'estado' => 'activo',
             ]);
 
             $productos[] = compact('producto', 'stockTotal', 'min', 'max');
@@ -357,7 +278,7 @@ class DatabaseSeeder extends Seeder
         // ═══════════════════════════════════════════════════════════════════
 
         $totalAlmacenes = count($almacenes);
-        $almacenesSecundarios = array_filter($almacenes, fn($a) => !$a->es_principal);
+        $almacenesSecundarios = array_filter($almacenes, fn ($a) => ! $a->es_principal);
         $numSecundarios = count($almacenesSecundarios);
 
         foreach ($productos as $data) {
@@ -368,7 +289,7 @@ class DatabaseSeeder extends Seeder
 
             // 60% al almacén principal
             $stockPrincipal = (int) round($stockTotal * 0.6);
-            
+
             // El resto se distribuye entre los almacenes secundarios
             $stockRestante = $stockTotal - $stockPrincipal;
             $stockPorSecundario = $numSecundarios > 0 ? (int) round($stockRestante / $numSecundarios) : 0;
@@ -382,16 +303,16 @@ class DatabaseSeeder extends Seeder
 
                 // Evitar stock negativo
                 $stock = max(0, $stock);
-                
+
                 // Ajustar stock máximo si es menor que el actual
                 $stockMaximo = max($max, $stock);
 
                 InventarioAlmacen::create([
-                    'producto_id'   => $producto->id,
-                    'almacen_id'    => $almacen->id,
-                    'stock_actual'  => $stock,
-                    'stock_minimo'  => $min,
-                    'stock_maximo'  => $stockMaximo,
+                    'producto_id' => $producto->id,
+                    'almacen_id' => $almacen->id,
+                    'stock_actual' => $stock,
+                    'stock_minimo' => $min,
+                    'stock_maximo' => $stockMaximo,
                     'punto_reorden' => (int) round($min * 0.8),
                 ]);
             }
@@ -559,8 +480,8 @@ class DatabaseSeeder extends Seeder
         foreach ($clientesData as $entry) {
             // Verificar si el cliente ya existe por código
             $cliente = Cliente::where('codigo', $entry['cliente']['codigo'])->first();
-            
-            if (!$cliente) {
+
+            if (! $cliente) {
                 $cliente = Cliente::create(array_merge($entry['cliente'], [
                     'pais' => 'El Salvador',
                     'estado' => 'activo',
@@ -572,7 +493,7 @@ class DatabaseSeeder extends Seeder
                 ->where('es_principal', true)
                 ->first();
 
-            if (!$direccionPrincipal) {
+            if (! $direccionPrincipal) {
                 DireccionCliente::create(array_merge($entry['direccion'], [
                     'cliente_id' => $cliente->id,
                     'pais' => 'El Salvador',
@@ -589,61 +510,61 @@ class DatabaseSeeder extends Seeder
         $transportistasData = [
             [
                 'usuario' => [
-                    'name'     => 'Luis Martínez',
-                    'email'    => 'trans01@tracelog.com',
+                    'name' => 'Luis Martínez',
+                    'email' => 'trans01@tracelog.com',
                     'password' => Hash::make('password'),
                     'almacen_id' => $almacenesPorCodigo['ALM-001']->id,
                     'email_verified_at' => now(),
                 ],
                 'vehiculo' => [
-                    'codigo'        => 'TRANS-001',
-                    'vehiculo_tipo'  => 'camion',
+                    'codigo' => 'TRANS-001',
+                    'vehiculo_tipo' => 'camion',
                     'vehiculo_placa' => 'C 123-456',
-                    'vehiculo_modelo'=> 'Kenworth T370',
-                    'capacidad_kg'   => 8000.00,
-                    'capacidad_m3'   => 45.00,
-                    'tiene_gps'      => true,
-                    'estado'         => 'disponible',
+                    'vehiculo_modelo' => 'Kenworth T370',
+                    'capacidad_kg' => 8000.00,
+                    'capacidad_m3' => 45.00,
+                    'tiene_gps' => true,
+                    'estado' => 'disponible',
                 ],
                 'almacen_codigo' => 'ALM-001',
             ],
             [
                 'usuario' => [
-                    'name'     => 'Carlos Pérez',
-                    'email'    => 'trans02@tracelog.com',
+                    'name' => 'Carlos Pérez',
+                    'email' => 'trans02@tracelog.com',
                     'password' => Hash::make('password'),
                     'almacen_id' => $almacenesPorCodigo['ALM-002']->id,
                     'email_verified_at' => now(),
                 ],
                 'vehiculo' => [
-                    'codigo'        => 'TRANS-002',
-                    'vehiculo_tipo'  => 'pickup',
+                    'codigo' => 'TRANS-002',
+                    'vehiculo_tipo' => 'pickup',
                     'vehiculo_placa' => 'P 789-012',
-                    'vehiculo_modelo'=> 'Toyota Hilux',
-                    'capacidad_kg'   => 1500.00,
-                    'capacidad_m3'   => 8.00,
-                    'tiene_gps'      => false,
-                    'estado'         => 'disponible',
+                    'vehiculo_modelo' => 'Toyota Hilux',
+                    'capacidad_kg' => 1500.00,
+                    'capacidad_m3' => 8.00,
+                    'tiene_gps' => false,
+                    'estado' => 'disponible',
                 ],
                 'almacen_codigo' => 'ALM-002',
             ],
             [
                 'usuario' => [
-                    'name'     => 'Miguel Ángel Rivas',
-                    'email'    => 'trans03@tracelog.com',
+                    'name' => 'Miguel Ángel Rivas',
+                    'email' => 'trans03@tracelog.com',
                     'password' => Hash::make('password'),
                     'almacen_id' => $almacenesPorCodigo['ALM-003']->id,
                     'email_verified_at' => now(),
                 ],
                 'vehiculo' => [
-                    'codigo'        => 'TRANS-003',
-                    'vehiculo_tipo'  => 'camion',
+                    'codigo' => 'TRANS-003',
+                    'vehiculo_tipo' => 'camion',
                     'vehiculo_placa' => 'C 456-789',
-                    'vehiculo_modelo'=> 'Isuzu NQR',
-                    'capacidad_kg'   => 5000.00,
-                    'capacidad_m3'   => 30.00,
-                    'tiene_gps'      => true,
-                    'estado'         => 'disponible',
+                    'vehiculo_modelo' => 'Isuzu NQR',
+                    'capacidad_kg' => 5000.00,
+                    'capacidad_m3' => 30.00,
+                    'tiene_gps' => true,
+                    'estado' => 'disponible',
                 ],
                 'almacen_codigo' => 'ALM-003',
             ],
@@ -659,7 +580,7 @@ class DatabaseSeeder extends Seeder
             Transportista::firstOrCreate(
                 ['codigo' => $data['vehiculo']['codigo']],
                 array_merge($data['vehiculo'], [
-                    'user_id'    => $usuario->id,
+                    'user_id' => $usuario->id,
                     'almacen_id' => $almacenesPorCodigo[$data['almacen_codigo']]->id,
                 ])
             );
@@ -688,14 +609,14 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->command->info('');
-        $this->command->info('Productos creados      : ' . count($productos));
-        $this->command->info('Almacenes creados      : ' . count($almacenes));
-        $this->command->info('Clientes creados       : ' . count($clientesData));
-        $this->command->info('Transportistas creados : ' . count($transportistasData));
+        $this->command->info('Productos creados      : '.count($productos));
+        $this->command->info('Almacenes creados      : '.count($almacenes));
+        $this->command->info('Clientes creados       : '.count($clientesData));
+        $this->command->info('Transportistas creados : '.count($transportistasData));
         $this->command->info('trans01@tracelog.com     → Rol: transportista (ALM-001)');
         $this->command->info('trans02@tracelog.com     → Rol: transportista (ALM-002)');
         $this->command->info('trans03@tracelog.com     → Rol: transportista (ALM-003)');
-        $this->command->info('Registros inventario   : ' . (count($productos) * count($almacenes)));
+        $this->command->info('Registros inventario   : '.(count($productos) * count($almacenes)));
         $this->command->info('');
 
         // ═══════════════════════════════════════════════════════════════════

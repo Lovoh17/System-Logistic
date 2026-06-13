@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Log;
 class EmailJSService
 {
     protected $publicKey;
+
     protected $serviceId;
+
     protected $templateId;
 
     public function __construct()
@@ -22,6 +24,7 @@ class EmailJSService
         try {
             if (empty($toEmail)) {
                 Log::error('Email de destino vacío');
+
                 return false;
             }
 
@@ -56,7 +59,9 @@ class EmailJSService
                 'Content-Type: application/json',
             ]);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -65,26 +70,29 @@ class EmailJSService
             Log::info('EmailJS Response:', [
                 'code' => $httpCode,
                 'response' => $response,
-                'to_email' => $toEmail
+                'to_email' => $toEmail,
             ]);
 
             if ($httpCode === 200) {
                 Log::info('Email enviado correctamente', ['pedido' => $data['numero']]);
+
                 return true;
             }
 
             Log::error('Error al enviar email', [
                 'pedido' => $data['numero'],
                 'response' => $response,
-                'code' => $httpCode
+                'code' => $httpCode,
             ]);
+
             return false;
 
         } catch (\Exception $e) {
             Log::error('Excepción al enviar email', [
                 'pedido' => $data['numero'],
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -102,17 +110,18 @@ class EmailJSService
         $html .= '<th style="padding: 8px; text-align: right;">Precio</th>';
         $html .= '<th style="padding: 8px; text-align: right;">Subtotal</th>';
         $html .= '</tr></thead><tbody>';
-        
+
         foreach ($items as $item) {
             $html .= '<tr>';
-            $html .= '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">' . htmlspecialchars($item['nombre']) . '</td>';
-            $html .= '<td style="padding: 8px; text-align: center; border-bottom: 1px solid #e5e7eb;">' . $item['cantidad'] . '</td>';
-            $html .= '<td style="padding: 8px; text-align: right; border-bottom: 1px solid #e5e7eb;">$' . number_format($item['precio'], 2) . '</td>';
-            $html .= '<td style="padding: 8px; text-align: right; border-bottom: 1px solid #e5e7eb;">$' . number_format($item['subtotal'], 2) . '</td>';
+            $html .= '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">'.htmlspecialchars($item['nombre']).'</td>';
+            $html .= '<td style="padding: 8px; text-align: center; border-bottom: 1px solid #e5e7eb;">'.$item['cantidad'].'</td>';
+            $html .= '<td style="padding: 8px; text-align: right; border-bottom: 1px solid #e5e7eb;">$'.number_format($item['precio'], 2).'</td>';
+            $html .= '<td style="padding: 8px; text-align: right; border-bottom: 1px solid #e5e7eb;">$'.number_format($item['subtotal'], 2).'</td>';
             $html .= '</tr>';
         }
-        
+
         $html .= '</tbody></table>';
+
         return $html;
     }
 }

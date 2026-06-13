@@ -1,17 +1,47 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\Filament\AdminPanelProvider;
+use App\Providers\Filament\ContadorPanelProvider;
+use App\Providers\Filament\LogisticaPanelProvider;
+use App\Providers\Filament\SucursalPanelProvider;
+use App\Providers\Filament\VentasPanelProvider;
+use Illuminate\Auth\AuthServiceProvider;
+use Illuminate\Auth\Passwords\PasswordResetServiceProvider;
+use Illuminate\Broadcasting\BroadcastServiceProvider;
+use Illuminate\Bus\BusServiceProvider;
+use Illuminate\Cache\CacheServiceProvider;
+use Illuminate\Cookie\CookieServiceProvider;
+use Illuminate\Database\DatabaseServiceProvider;
+use Illuminate\Encryption\EncryptionServiceProvider;
+use Illuminate\Filesystem\FilesystemServiceProvider;
+use Illuminate\Foundation\AliasLoader;
+use Illuminate\Foundation\Providers\ConsoleSupportServiceProvider;
+use Illuminate\Foundation\Providers\FoundationServiceProvider;
+use Illuminate\Hashing\HashServiceProvider;
+use Illuminate\Mail\MailServiceProvider;
+use Illuminate\Notifications\NotificationServiceProvider;
+use Illuminate\Pagination\PaginationServiceProvider;
+use Illuminate\Pipeline\PipelineServiceProvider;
+use Illuminate\Queue\QueueServiceProvider;
+use Illuminate\Redis\RedisServiceProvider;
+use Illuminate\Session\SessionServiceProvider;
+use Illuminate\Translation\TranslationServiceProvider;
+use Illuminate\Validation\ValidationServiceProvider;
+use Illuminate\View\ViewServiceProvider;
+
 return [
 
-    'name'     => env('APP_NAME', 'TraceLog'),
-    'env'      => env('APP_ENV', 'production'),
-    'debug'    => (bool) env('APP_DEBUG', false),
-    'url'      => env('APP_URL', 'http://localhost'),
+    'name' => env('APP_NAME', 'TraceLog'),
+    'env' => env('APP_ENV', 'production'),
+    'debug' => (bool) env('APP_DEBUG', false),
+    'url' => env('APP_URL', 'http://localhost'),
     'timezone' => 'America/El_Salvador',
-    'locale'   => 'es',
+    'locale' => 'es',
     'fallback_locale' => 'es',
-    'faker_locale'    => 'es_ES',
-    'cipher'   => 'AES-256-CBC',
-    'key'      => env('APP_KEY'),
+    'faker_locale' => 'es_ES',
+    'cipher' => 'AES-256-CBC',
+    'key' => env('APP_KEY'),
     'public_key' => env('EMAILJS_PUBLIC_KEY'),
     'service_id' => env('EMAILJS_SERVICE_ID'),
     'template_id' => env('EMAILJS_TEMPLATE_ID'),
@@ -21,36 +51,36 @@ return [
     ],
 
     'providers' => [
-        Illuminate\Auth\AuthServiceProvider::class,
-        Illuminate\Broadcasting\BroadcastServiceProvider::class,
-        Illuminate\Bus\BusServiceProvider::class,
-        Illuminate\Cache\CacheServiceProvider::class,
-        Illuminate\Foundation\Providers\ConsoleSupportServiceProvider::class,
-        Illuminate\Cookie\CookieServiceProvider::class,
-        Illuminate\Database\DatabaseServiceProvider::class,
-        Illuminate\Encryption\EncryptionServiceProvider::class,
-        Illuminate\Filesystem\FilesystemServiceProvider::class,
-        Illuminate\Foundation\Providers\FoundationServiceProvider::class,
-        Illuminate\Hashing\HashServiceProvider::class,
-        Illuminate\Mail\MailServiceProvider::class,
-        Illuminate\Notifications\NotificationServiceProvider::class,
-        Illuminate\Pagination\PaginationServiceProvider::class,
-        Illuminate\Pipeline\PipelineServiceProvider::class,
-        Illuminate\Queue\QueueServiceProvider::class,
-        Illuminate\Redis\RedisServiceProvider::class,
-        Illuminate\Auth\Passwords\PasswordResetServiceProvider::class,
-        Illuminate\Session\SessionServiceProvider::class,
-        Illuminate\Translation\TranslationServiceProvider::class,
-        Illuminate\Validation\ValidationServiceProvider::class,
-        Illuminate\View\ViewServiceProvider::class,
+        AuthServiceProvider::class,
+        BroadcastServiceProvider::class,
+        BusServiceProvider::class,
+        CacheServiceProvider::class,
+        ConsoleSupportServiceProvider::class,
+        CookieServiceProvider::class,
+        DatabaseServiceProvider::class,
+        EncryptionServiceProvider::class,
+        FilesystemServiceProvider::class,
+        FoundationServiceProvider::class,
+        HashServiceProvider::class,
+        MailServiceProvider::class,
+        NotificationServiceProvider::class,
+        PaginationServiceProvider::class,
+        PipelineServiceProvider::class,
+        QueueServiceProvider::class,
+        RedisServiceProvider::class,
+        PasswordResetServiceProvider::class,
+        SessionServiceProvider::class,
+        TranslationServiceProvider::class,
+        ValidationServiceProvider::class,
+        ViewServiceProvider::class,
         // App Providers
-        App\Providers\AppServiceProvider::class,
-        App\Providers\Filament\AdminPanelProvider::class,
-        App\Providers\Filament\VentasPanelProvider::class,
-        App\Providers\Filament\LogisticaPanelProvider::class,
-        App\Providers\Filament\ContadorPanelProvider::class,
-        App\Providers\Filament\SucursalPanelProvider::class,
+        AppServiceProvider::class,
+        AdminPanelProvider::class,
+        VentasPanelProvider::class,
+        LogisticaPanelProvider::class,
+        ContadorPanelProvider::class,
+        SucursalPanelProvider::class,
     ],
 
-    'aliases' => Illuminate\Foundation\AliasLoader::getInstance()->getAliases(),
+    'aliases' => AliasLoader::getInstance()->getAliases(),
 ];

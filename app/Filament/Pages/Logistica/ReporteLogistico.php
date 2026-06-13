@@ -3,28 +3,34 @@
 namespace App\Filament\Pages\Logistica;
 
 use App\Models\Envio;
+use App\Models\InventarioAlmacen;
 use App\Models\PedidoVenta;
+use App\Models\PedidoVentaItem;
 use App\Models\Producto;
 use App\Models\Proveedor;
-use App\Models\Cliente;
-use Filament\Pages\Page;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms;
+use Filament\Pages\Page;
 use Illuminate\Support\Carbon;
 
 class ReporteLogistico extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon  = 'heroicon-o-chart-bar';
+    protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
+
     protected static ?string $navigationLabel = 'Reportes Logísticos';
+
     protected static ?string $navigationGroup = 'Administración';
-    protected static ?int    $navigationSort  = 10;
-    protected static string  $view = 'filament.pages.reporte-logistico';
+
+    protected static ?int $navigationSort = 10;
+
+    protected static string $view = 'filament.pages.reporte-logistico';
 
     public ?string $periodo = 'mes_actual';
+
     public ?string $fecha_desde = null;
+
     public ?string $fecha_hasta = null;
 
     public function mount(): void
@@ -41,7 +47,7 @@ class ReporteLogistico extends Page implements HasForms
         // ── Pedidos de Venta ──────────────────────────
         $pedidos = PedidoVenta::whereBetween('fecha_pedido', [$desde, $hasta]);
 
-        $totalVentas    = $pedidos->clone()->whereNotIn('estado', ['cancelado', 'borrador'])->sum('total');
+        $totalVentas = $pedidos->clone()->whereNotIn('estado', ['cancelado', 'borrador'])->sum('total');
         $pedidosTotales = $pedidos->clone()->count();
         $pedidosEntregados = $pedidos->clone()->where('estado', 'entregado')->count();
         $pedidosCancelados = $pedidos->clone()->where('estado', 'cancelado')->count();
@@ -51,10 +57,10 @@ class ReporteLogistico extends Page implements HasForms
             : 0;
 
         // ── Envíos ────────────────────────────────────
-        $envios       = Envio::whereBetween('fecha_programada', [$desde, $hasta]);
-        $totalEnvios  = $envios->clone()->count();
+        $envios = Envio::whereBetween('fecha_programada', [$desde, $hasta]);
+        $totalEnvios = $envios->clone()->count();
         $enviosEntregados = $envios->clone()->where('estado', 'entregado')->count();
-        $enviosFallidos   = $envios->clone()->where('estado', 'fallido')->count();
+        $enviosFallidos = $envios->clone()->where('estado', 'fallido')->count();
 
         // Tiempo promedio de entrega
         $tiempoPromedio = Envio::whereBetween('fecha_programada', [$desde, $hasta])
@@ -65,9 +71,19 @@ class ReporteLogistico extends Page implements HasForms
             ->value('promedio');
 
         // ── Inventario ────────────────────────────────
-        $productosStockBajo  = Producto::whereColumn('stock_actual', '<=', 'stock_minimo')->count();
-        $productosSinStock   = Producto::where('stock_actual', '<=', 0)->count();
-        $valorInventario     = Producto::selectRaw('SUM(stock_actual * precio_compra) as valor')->value('valor') ?? 0;
+        // El stock vive en inventario_almacen (por sucursal), no en productos.
+        $productosStockBajo = InventarioAlmacen::whereColumn('stock_actual', '<=', 'stock_minimo')
+            ->distinct('producto_id')
+            ->count('producto_id');
+
+        $productosSinStock = Producto::activo()
+            ->whereDoesntHave('inventarioAlmacen', fn ($q) => $q->where('stock_actual', '>', 0))
+            ->count();
+
+        $valorInventario = InventarioAlmacen::query()
+            ->join('productos', 'productos.id', '=', 'inventario_almacen.producto_id')
+            ->selectRaw('SUM(inventario_almacen.stock_actual * productos.precio_compra) as valor')
+            ->value('valor') ?? 0;
 
         // ── Proveedores ───────────────────────────────
         $proveedoresActivos = Proveedor::where('estado', 'activo')->count();
@@ -83,10 +99,9 @@ class ReporteLogistico extends Page implements HasForms
             ->get();
 
         // ── Top productos vendidos ─────────────────────
-        $topProductos = \App\Models\PedidoVentaItem::whereHas('pedidoVenta', fn($q) =>
-                $q->whereBetween('fecha_pedido', [$desde, $hasta])
-                  ->whereNotIn('estado', ['cancelado', 'borrador'])
-            )
+        $topProductos = PedidoVentaItem::whereHas('pedidoVenta', fn ($q) => $q->whereBetween('fecha_pedido', [$desde, $hasta])
+            ->whereNotIn('estado', ['cancelado', 'borrador'])
+        )
             ->with('producto')
             ->selectRaw('producto_id, SUM(cantidad) as total_vendido, SUM(subtotal) as total_valor')
             ->groupBy('producto_id')
